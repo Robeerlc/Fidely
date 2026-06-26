@@ -48,6 +48,11 @@ public class GoogleWalletService {
                 passObject.put("classId", classId);
                 passObject.put("state", "ACTIVE");
 
+                passObject.put("cardTitle", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Fidely")));
+                passObject.put("subheader", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Tarjeta de Cliente")));
+                passObject.put("header", Map.of("defaultValue", Map.of("language", "es-ES", "value", walletCard.getCustomer().getName())));
+                passObject.put("hexBackgroundColor", "#000000"); // Color de fondo obligatorio
+
                 Map<String, Object> barcode = new HashMap<>();
                 barcode.put("type", "QR_CODE");
                 barcode.put("value", walletCard.getSecureUuid());
@@ -70,7 +75,6 @@ public class GoogleWalletService {
                         .withExpiresAt(new Date(nowMillis + 3600000))
                         .withPayload(payloadClaims)
                         .sign(algorithm);
-
                 return "https://pay.google.com/gp/v/save/" + jwtToken;
             }
         } catch (Exception e) {
