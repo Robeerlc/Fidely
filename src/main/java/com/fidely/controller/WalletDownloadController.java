@@ -22,6 +22,7 @@ public class WalletDownloadController {
     public ResponseEntity<?> downloadWalletPass(
             @PathVariable String secureUuid,
             @RequestHeader(value = "User-Agent", defaultValue = "unknown") String userAgent) {
+        System.out.println("User-Agent: " + userAgent);
         WalletCard walletCard = walletCardRepository.findBySecureUuid(secureUuid)
                 .orElse(null);
 
