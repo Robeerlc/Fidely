@@ -34,11 +34,6 @@ public class WalletDownloadController {
         else return ResponseEntity.badRequest().body("Por favor, abre este enlace desde tu teléfono móvil.");
     }
 
-    private ResponseEntity<?> downloadForApple(WalletCard walletCard) {
-        // TODO: jPasskit lógica
-        return ResponseEntity.ok("Aquí irá el archivo .pkpass de Apple para el UUID: " + walletCard.getSecureUuid());
-    }
-
     private ResponseEntity<?> downloadForGoogle(WalletCard walletCard) {
         try {
             String googleLink = googleWalletService.generateGoogleWalletLink(walletCard);
@@ -50,4 +45,11 @@ public class WalletDownloadController {
                     .body("Error al generar el pase de Google Wallet.");
         }
     }
+
+    private ResponseEntity<?> downloadForApple(WalletCard walletCard) {
+        // TODO: jPasskit lógica
+        return ResponseEntity.ok("Aquí irá el archivo .pkpass de Apple para el UUID: " + walletCard.getSecureUuid());
+    }
+
+
 }
