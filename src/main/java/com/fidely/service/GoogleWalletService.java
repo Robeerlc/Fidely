@@ -21,7 +21,6 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class GoogleWalletService {
 
-    // Ahora mapean a las propiedades de tu application.properties
     @Value("${fidely.wallet.google.issuer-id}")
     private String issuerId;
 
@@ -35,37 +34,25 @@ public class GoogleWalletService {
 
     public String generateGoogleWalletLink(WalletCard walletCard) {
         try {
-            // 1. Extraer credenciales reales del archivo JSON
             Resource resource = resourceLoader.getResource(credentialsPath);
             try (InputStream is = resource.getInputStream()) {
-                ServiceAccountCredentials credentials = ServiceAccountCredentials.fromStream(is);
-
+                ServiceAccountCredentials credentials = (ServiceAccountCredentials) ServiceAccountCredentials.fromStream(is);
                 String serviceAccountEmail = credentials.getClientEmail();
                 RSAPrivateKey privateKey = (RSAPrivateKey) credentials.getPrivateKey();
 
-                // 2. Definir los identificadores únicos
                 String classId = String.format("%s.%s", issuerId, classIdSuffix);
                 String objectId = String.format("%s.%s", issuerId, walletCard.getSecureUuid());
 
-                // 3. Construir el esqueleto del PassObject
                 Map<String, Object> passObject = new HashMap<>();
                 passObject.put("id", objectId);
                 passObject.put("classId", classId);
                 passObject.put("state", "ACTIVE");
 
-                // Metemos el UUID secreto dentro del QR
                 Map<String, Object> barcode = new HashMap<>();
                 barcode.put("type", "QR_CODE");
                 barcode.put("value", walletCard.getSecureUuid());
                 passObject.put("barcode", barcode);
 
-                // Mostramos los sellos actuales
-                Map<String, Object> stampsModule = new HashMap<>();
-                stampsModule.put("header", "SELLOS ACUMULADOS");
-                stampsModule.put("body", walletCard.getCurrentStamps() + " / " + walletCard.getMaxStamps());
-                passObject.put("textModulesData", List.of(stampsModule));
-
-                // 4. Montar el Payload del JWT
                 Map<String, Object> payloadClaims = new HashMap<>();
                 payloadClaims.put("iss", serviceAccountEmail);
                 payloadClaims.put("aud", "google");
@@ -76,7 +63,6 @@ public class GoogleWalletService {
                 payloadObjects.put("genericObjects", List.of(passObject));
                 payloadClaims.put("payload", payloadObjects);
 
-                // 5. Firmar el JWT con la clave real RSA de tu archivo JSON
                 Algorithm algorithm = Algorithm.RSA256(null, privateKey);
                 long nowMillis = System.currentTimeMillis();
                 String jwtToken = JWT.create()
