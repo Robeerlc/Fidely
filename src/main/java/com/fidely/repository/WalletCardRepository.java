@@ -1,5 +1,7 @@
 package com.fidely.repository;
 
+import com.fidely.entity.Business;
+import com.fidely.entity.Customer;
 import com.fidely.entity.WalletCard;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -14,4 +16,6 @@ public interface WalletCardRepository extends JpaRepository<WalletCard, Long> {
     List<WalletCard> findByCustomerId(Long customerId);
 
     long countByBusinessIdAndIsActiveTrue(Long businessId);
+
+    Optional<WalletCard> findByCustomerAndBusiness(Customer customer, Business business);
 }

@@ -9,6 +9,7 @@ import com.fidely.repository.CustomerRepository;
 import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional; // <-- IMPORTANTE
 
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -21,22 +22,22 @@ public class WalletService {
     private final CustomerRepository customerRepository;
     private final WalletCardRepository walletCardRepository;
 
+    @Transactional
     public WalletCard createCardForCustomer(CreateCardRequest request) {
         Business business = businessRepository.findById(request.businessId())
                 .orElseThrow(() -> new NoSuchElementException("Error: La peluquería no existe."));
 
-        Customer customer = customerRepository.findByPhoneNumber(request.customerPhone()).orElseGet(() -> {
-            Customer newCustomer = Customer.builder()
-                    .name(request.customerName())
-                    .phoneNumber(request.customerPhone())
-                    .email(request.customerEmail())
-                    .build();
-            return customerRepository.save(newCustomer);
-        });
+        Customer customer = customerRepository.findByPhoneNumber(request.customerPhone())
+                .orElseGet(() -> {
+                    Customer newCustomer = Customer.builder()
+                            .name(request.customerName())
+                            .phoneNumber(request.customerPhone())
+                            .email(request.customerEmail())
+                            .build();
+                    return customerRepository.save(newCustomer);
+                });
 
-        Optional<WalletCard> existingCard = walletCardRepository.findByCustomerId(customer.getId()).stream()
-                .filter(card -> card.getBusiness().getId().equals(business.getId()))
-                .findFirst();
+        Optional<WalletCard> existingCard = walletCardRepository.findByCustomerAndBusiness(customer, business);
         if (existingCard.isPresent()) return existingCard.get();
 
         WalletCard newCard = WalletCard.builder()
