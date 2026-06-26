@@ -2,16 +2,16 @@ package com.fidely.controller;
 
 import com.fidely.dto.CardResponse;
 import com.fidely.dto.CreateCardRequest;
+import com.fidely.entity.Business;
 import com.fidely.entity.WalletCard;
+import com.fidely.repository.BusinessRepository;
+import com.fidely.service.GoogleWalletService;
 import com.fidely.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/wallet")
@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class WalletController {
 
     private final WalletService walletService;
+    private final BusinessRepository businessRepository;
+    private final GoogleWalletService googleWalletService;
 
     @PostMapping("/create")
     public ResponseEntity<CardResponse> createCard(@Valid @RequestBody CreateCardRequest request) {
@@ -32,5 +34,17 @@ public class WalletController {
                 "Tarjeta digital creada correctamente"
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/business/{businessId}/sync-google")
+    public ResponseEntity<String> syncBusinessWithGoogleWallet(@PathVariable Long businessId) {
+        Business business = businessRepository.findById(businessId).orElse(null);
+        if (business == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Negocio no encontrado");
+        try {
+            googleWalletService.createLoyaltyClassForBusiness(business);
+            return ResponseEntity.ok("Plantilla de Google Wallet creada/actualizada con éxito para: " + business.getBrandName());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sincronizando con Google: " + e.getMessage());
+        }
     }
 }
