@@ -89,20 +89,24 @@ public class GoogleWalletService {
                     logo.put("sourceUri", Map.of("uri", business.getLogoUrl()));
                     passObject.put("logo", logo);
                 }
+
+                String brandName = business.getBrandName() != null ? business.getBrandName() : business.getName();
+                passObject.put("cardTitle", Map.of("defaultValue", Map.of("language", "es-ES", "value", brandName)));
+
                 String mainTitle = business.getRewardDescription() != null ? business.getRewardDescription() : "¡Consigue tu premio!";
                 passObject.put("header", Map.of("defaultValue", Map.of("language", "es-ES", "value", mainTitle)));
 
                 Map<String, Object> stampsModule = new HashMap<>();
-                stampsModule.put("localizedHeader", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Cupones disponibles 🏷️")));
-                stampsModule.put("localizedBody", Map.of("defaultValue", Map.of("language", "es-ES", "value", walletCard.getCurrentStamps() + " / " + walletCard.getMaxStamps() + " Cortes")));
+                stampsModule.put("header", "Cupones disponibles 🏷️");
+                stampsModule.put("body", walletCard.getCurrentStamps() + " / " + walletCard.getMaxStamps());
 
                 Map<String, Object> clientModule = new HashMap<>();
-                clientModule.put("localizedHeader", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Cliente:")));
-                clientModule.put("localizedBody", Map.of("defaultValue", Map.of("language", "es-ES", "value", customer.getName() != null ? customer.getName() : "Cliente VIP")));
+                clientModule.put("header", "Cliente:");
+                clientModule.put("body", customer.getName() != null ? customer.getName() : "Cliente VIP");
 
                 Map<String, Object> familyModule = new HashMap<>();
-                familyModule.put("localizedHeader", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Beneficio")));
-                familyModule.put("localizedBody", Map.of("defaultValue", Map.of("language", "es-ES", "value", "Ser de nuestra familia tiene recompensa")));
+                familyModule.put("header", "Beneficio");
+                familyModule.put("body", "Ser de nuestra familia tiene recompensa");
 
                 passObject.put("textModulesData", List.of(stampsModule, clientModule, familyModule));
 
@@ -129,12 +133,15 @@ public class GoogleWalletService {
 
                 Algorithm algorithm = Algorithm.RSA256(null, privateKey);
                 long nowMillis = System.currentTimeMillis();
-                String jwtToken = JWT.create().withIssuedAt(new Date(nowMillis)).withExpiresAt(new Date(nowMillis + 3600000)).withPayload(payloadClaims).sign(algorithm);
-
+                String jwtToken = JWT.create()
+                        .withIssuedAt(new Date(nowMillis))
+                        .withExpiresAt(new Date(nowMillis + 3600000))
+                        .withPayload(payloadClaims)
+                        .sign(algorithm);
                 return "https://pay.google.com/gp/v/save/" + jwtToken;
             }
         } catch (Exception e) {
-            throw new RuntimeException("Error generando el enlace de Google Wallet Premium", e);
+            throw new RuntimeException("Error generando el enlace de Google Wallet", e);
         }
     }
 }
