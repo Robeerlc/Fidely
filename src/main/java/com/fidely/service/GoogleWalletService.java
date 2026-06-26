@@ -90,6 +90,9 @@ public class GoogleWalletService {
                     passObject.put("logo", logo);
                 }
 
+                String brandName = business.getBrandName() != null ? business.getBrandName() : business.getName();
+                passObject.put("cardTitle", Map.of("defaultValue", Map.of("language", "es-ES", "value", brandName)));
+
                 String mainTitle = business.getRewardDescription() != null ? business.getRewardDescription() : "¡Consigue tu premio!";
                 passObject.put("header", Map.of("defaultValue", Map.of("language", "es-ES", "value", mainTitle)));
 
