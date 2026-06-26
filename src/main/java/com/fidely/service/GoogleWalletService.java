@@ -1,14 +1,9 @@
 package com.fidely.service;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.fidely.entity.WalletCard;
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.http.HttpTransport;
-import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.walletobjects.Walletobjects;
-import com.google.api.services.walletobjects.model.Barcode;
-import com.google.api.services.walletobjects.model.GenericObject;
+import com.google.auth.oauth2.ServiceAccountCredentials;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -16,7 +11,11 @@ import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
-import java.util.Collections;
+import java.security.interfaces.RSAPrivateKey;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -35,58 +34,47 @@ public class GoogleWalletService {
 
     public String generateGoogleWalletLink(WalletCard walletCard) {
         try {
-            HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-            JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-
-            // 1. Autenticación con Google usando tu JSON
             Resource resource = resourceLoader.getResource(credentialsPath);
-            GoogleCredential credential;
             try (InputStream is = resource.getInputStream()) {
-                credential = GoogleCredential.fromStream(is)
-                        .createScoped(Collections.singleton("https://www.googleapis.com/auth/wallet_object.issuer"));
+                ServiceAccountCredentials credentials = (ServiceAccountCredentials) ServiceAccountCredentials.fromStream(is);
+                String serviceAccountEmail = credentials.getClientEmail();
+                RSAPrivateKey privateKey = (RSAPrivateKey) credentials.getPrivateKey();
+
+                String classId = String.format("%s.%s", issuerId, classIdSuffix);
+                String objectId = String.format("%s.%s", issuerId, walletCard.getSecureUuid());
+
+                Map<String, Object> passObject = new HashMap<>();
+                passObject.put("id", objectId);
+                passObject.put("classId", classId);
+                passObject.put("state", "ACTIVE");
+
+                Map<String, Object> barcode = new HashMap<>();
+                barcode.put("type", "QR_CODE");
+                barcode.put("value", walletCard.getSecureUuid());
+                passObject.put("barcode", barcode);
+
+                Map<String, Object> payloadClaims = new HashMap<>();
+                payloadClaims.put("iss", serviceAccountEmail);
+                payloadClaims.put("aud", "google");
+                payloadClaims.put("origins", List.of());
+                payloadClaims.put("typ", "savetowallet");
+
+                Map<String, Object> payloadObjects = new HashMap<>();
+                payloadObjects.put("genericObjects", List.of(passObject));
+                payloadClaims.put("payload", payloadObjects);
+
+                Algorithm algorithm = Algorithm.RSA256(null, privateKey);
+                long nowMillis = System.currentTimeMillis();
+                String jwtToken = JWT.create()
+                        .withIssuedAt(new Date(nowMillis))
+                        .withExpiresAt(new Date(nowMillis + 3600000))
+                        .withPayload(payloadClaims)
+                        .sign(algorithm);
+
+                return "https://pay.google.com/gp/v/save/" + jwtToken;
             }
-
-            // 2. Cliente oficial de la API de Google Wallet
-            Walletobjects client = new Walletobjects.Builder(httpTransport, jsonFactory, credential)
-                    .setApplicationName("Fidely")
-                    .build();
-
-            // 3. Nombres de Clase y Objeto
-            String classId = String.format("%s.%s", issuerId, classIdSuffix);
-            String objectId = String.format("%s.%s", issuerId, walletCard.getSecureUuid());
-
-            // 4. Construimos el Objeto Genérico usando el SDK oficial (no mapas crudos)
-            GenericObject newObject = new GenericObject()
-                    .setId(objectId)
-                    .setClassId(classId)
-                    .setState("ACTIVE")
-                    .setBarcode(new Barcode()
-                            .setType("QR_CODE")
-                            .setValue(walletCard.getSecureUuid())
-                            .setAlternateText(walletCard.getSecureUuid()));
-
-            // 5. ¡AQUÍ ESTÁ LA MAGIA! Intentamos insertarlo directamente en Google.
-            // Si hay un error de formato, permisos o clase inexistente, petará en esta línea
-            // y te dará el mensaje exacto de por qué Google lo odia.
-            try {
-                System.out.println("Intentando insertar objeto en Google Wallet: " + objectId);
-                client.genericobject().insert(newObject).execute();
-                System.out.println("¡INSERCIÓN EXITOSA! Google ha aceptado la tarjeta.");
-            } catch (Exception apiError) {
-                System.err.println("\n\n❌ ERROR DE GOOGLE REVELADO ❌");
-                System.err.println("El motivo exacto del rechazo es:");
-                System.err.println(apiError.getMessage());
-                System.err.println("❌❌❌\n\n");
-                throw apiError; // Lo lanzamos para que lo veas también en el Postman
-            }
-
-            // Si llegamos aquí, la tarjeta ya vive en los servidores de Google.
-            // Ahora sí podemos generar el JWT básico y enviarlo al usuario sin miedo.
-            // (Para esta prueba de debug, simplemente devolvemos un OK si no explotó arriba)
-            return "https://pay.google.com/gp/v/save/AQUI_IRIA_EL_JWT_PERO_ESTAMOS_DEBUGGEANDO";
-
         } catch (Exception e) {
-            throw new RuntimeException("Fallo crítico general", e);
+            throw new RuntimeException("Error generando el enlace de Google Wallet", e);
         }
     }
 }
