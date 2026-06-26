@@ -97,7 +97,7 @@ public class GoogleWalletService {
                 passObject.put("classId", classId);
                 passObject.put("state", "ACTIVE");
 
-                passObject.put("accountId", walletCard.getSecureUuid());
+                passObject.put("accountId", "Socio #" + customer.getId());
                 passObject.put("accountName", customer.getName() != null ? customer.getName() : "Cliente VIP");
                 passObject.put("hexBackgroundColor", business.getThemeColor() != null ? business.getThemeColor() : "#000000");
 
@@ -111,6 +111,12 @@ public class GoogleWalletService {
                 loyaltyPoints.put("label", "SELLOS");
                 loyaltyPoints.put("balance", Map.of("string", walletCard.getCurrentStamps() + " / " + walletCard.getMaxStamps() + " ✂️"));
                 passObject.put("loyaltyPoints", loyaltyPoints);
+
+                Map<String, Object> rewardModule = new HashMap<>();
+                rewardModule.put("header", "RECOMPENSA");
+                String rewardText = business.getRewardDescription() != null ? business.getRewardDescription() : "¡Completa la tarjeta para tu premio!";
+                rewardModule.put("body", rewardText);
+                passObject.put("textModulesData", List.of(rewardModule));
 
                 if (business.getBookingUrl() != null || business.getInstagramUrl() != null) {
                     Map<String, Object> linksModule = new HashMap<>();
