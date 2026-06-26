@@ -41,7 +41,7 @@ public class WalletController {
         Business business = businessRepository.findById(businessId).orElse(null);
         if (business == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Negocio no encontrado");
         try {
-            googleWalletService.createLoyaltyClassForBusiness(business);
+            googleWalletService.createGenericClassForBusiness(business);
             return ResponseEntity.ok("Plantilla de Google Wallet creada/actualizada con éxito para: " + business.getBrandName());
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sincronizando con Google: " + e.getMessage());
