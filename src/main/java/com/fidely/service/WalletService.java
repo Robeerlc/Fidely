@@ -1,19 +1,20 @@
 package com.fidely.service;
 
+import com.fidely.dto.request.OnboardingRequest;
 import com.fidely.dto.request.card.CreateCardRequest;
 import com.fidely.dto.request.card.RedeemRequest;
 import com.fidely.dto.request.card.ScanRequest;
+import com.fidely.dto.response.OnboardingResponse;
 import com.fidely.dto.response.card.CardInfoResponse;
 import com.fidely.dto.response.card.RedeemResponse;
 import com.fidely.dto.response.card.ScanResponse;
 import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
-import com.fidely.repository.CustomerRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // <-- IMPORTANTE
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
@@ -24,24 +25,22 @@ import java.util.Optional;
 public class WalletService {
 
     private final BusinessRepository businessRepository;
-    private final CustomerRepository customerRepository;
     private final WalletCardRepository walletCardRepository;
     private final ScanLogRepository scanLogRepository;
+    private final GoogleWalletService googleWalletService;
+    private final CustomerService customerService;
+    private final EmailService emailService;
 
     @Transactional
     public WalletCard createCardForCustomer(CreateCardRequest request) {
         Business business = businessRepository.findById(request.businessId())
                 .orElseThrow(() -> new NoSuchElementException("Error: La peluquería no existe."));
 
-        Customer customer = customerRepository.findByPhoneNumber(request.customerPhone())
-                .orElseGet(() -> {
-                    Customer newCustomer = Customer.builder()
-                            .name(request.customerName())
-                            .phoneNumber(request.customerPhone())
-                            .email(request.customerEmail())
-                            .build();
-                    return customerRepository.save(newCustomer);
-                });
+        Customer customer = customerService.getOrCreateCustomer(
+                request.customerName(),
+                request.customerPhone(),
+                request.customerEmail()
+        );
 
         Optional<WalletCard> existingCard = walletCardRepository.findByCustomerAndBusiness(customer, business);
         if (existingCard.isPresent()) return existingCard.get();
@@ -51,6 +50,36 @@ public class WalletService {
                 .business(business)
                 .build();
         return walletCardRepository.save(newCard);
+    }
+
+    @Transactional
+    public OnboardingResponse silentOnboarding(OnboardingRequest request) {
+        Business business = businessRepository.findById(request.getBusinessId())
+                .orElseThrow(() -> new RuntimeException("El negocio no existe."));
+
+        Customer customer = customerService.getOrCreateCustomer(
+                request.getName(),
+                request.getPhoneNumber(),
+                request.getEmail()
+        );
+
+        WalletCard card = walletCardRepository.findByCustomerAndBusiness(customer, business)
+                .orElseGet(() -> {
+                    WalletCard newCard = WalletCard.builder()
+                            .customer(customer)
+                            .business(business)
+                            .build();
+                    return walletCardRepository.save(newCard);
+                });
+        String walletUrl = googleWalletService.generateGoogleWalletLink(card);
+
+        emailService.sendWelcomeAndCardEmail(
+                customer.getEmail(),
+                customer.getName(),
+                business.getBrandName() != null ? business.getBrandName() : business.getName(),
+                walletUrl
+        );
+        return new OnboardingResponse(walletUrl, "¡Tarjeta generada con éxito!");
     }
 
     @Transactional

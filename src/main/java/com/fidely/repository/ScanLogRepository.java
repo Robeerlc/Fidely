@@ -10,8 +10,8 @@ import java.util.List;
 @Repository
 public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
 
-    long countByBusinessIdAndScanType(Long businessId, ScanType scanType);
+    long countByWalletCardBusinessIdAndScanType(Long businessId, ScanType scanType);
 
-    List<ScanLog> findTop10ByBusinessIdOrderByScannedAtDesc(Long businessId);
+    List<ScanLog> findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(Long businessId);
 
 }

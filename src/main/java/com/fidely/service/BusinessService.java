@@ -91,10 +91,9 @@ public class BusinessService {
                 .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
 
         long totalCustomers = walletCardRepository.countByBusinessId(businessId);
-        long totalStamps = scanLogRepository.countByBusinessIdAndScanType(businessId, ScanType.EARN_STAMP);
-        long totalRewards = scanLogRepository.countByBusinessIdAndScanType(businessId, ScanType.REDEEM_REWARD);
-
-        List<ScanLog> recentLogs = scanLogRepository.findTop10ByBusinessIdOrderByScannedAtDesc(businessId);
+        long totalStamps = scanLogRepository.countByWalletCardBusinessIdAndScanType(businessId, ScanType.EARN_STAMP);
+        long totalRewards = scanLogRepository.countByWalletCardBusinessIdAndScanType(businessId, ScanType.REDEEM_REWARD);
+        List<ScanLog> recentLogs = scanLogRepository.findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(businessId);
 
         List<ActivityLogResponse> activities = recentLogs.stream()
                 .map(log -> {

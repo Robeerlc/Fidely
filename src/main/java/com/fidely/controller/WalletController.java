@@ -1,7 +1,9 @@
 package com.fidely.controller;
 
-import com.fidely.dto.response.card.CardResponse;
+import com.fidely.dto.request.OnboardingRequest;
 import com.fidely.dto.request.card.CreateCardRequest;
+import com.fidely.dto.response.OnboardingResponse;
+import com.fidely.dto.response.card.CardResponse;
 import com.fidely.entity.Business;
 import com.fidely.entity.WalletCard;
 import com.fidely.repository.BusinessRepository;
@@ -33,6 +35,12 @@ public class WalletController {
                 "Tarjeta digital creada correctamente"
         );
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/onboarding")
+    public ResponseEntity<OnboardingResponse> silentOnboarding(@Valid @RequestBody OnboardingRequest request) {
+        OnboardingResponse response = walletService.silentOnboarding(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/business/{businessId}/sync-google")
