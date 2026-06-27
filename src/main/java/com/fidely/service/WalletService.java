@@ -1,8 +1,6 @@
 package com.fidely.service;
 
-import com.fidely.dto.CreateCardRequest;
-import com.fidely.dto.ScanRequest;
-import com.fidely.dto.ScanResponse;
+import com.fidely.dto.*;
 import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.CustomerRepository;
@@ -82,5 +80,29 @@ public class WalletService {
                 ? "¡Sello añadido! Tarjeta completada, premio desbloqueado."
                 : "Sello añadido correctamente.";
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(), message);
+    }
+
+    @Transactional
+    public RedeemResponse redeemReward(RedeemRequest request) {
+        WalletCard card = walletCardRepository.findBySecureUuid(request.getSecureUuid())
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o UUID inválido."));
+
+        if (!card.getBusiness().getId().equals(request.getBusinessId()))
+            throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
+
+        if (card.getCurrentStamps() < card.getMaxStamps())
+            throw new RuntimeException("El cliente no tiene los sellos necesarios ("
+                    + card.getCurrentStamps() + "/" + card.getMaxStamps() + ").");
+
+        ScanLog scanLog = ScanLog.builder()
+                .walletCard(card)
+                .scanType(ScanType.REDEEM_REWARD)
+                .scannedAt(LocalDateTime.now())
+                .build();
+        scanLogRepository.save(scanLog);
+
+        card.setCurrentStamps(0);
+        walletCardRepository.save(card);
+        return new RedeemResponse(true, "¡Premio canjeado con éxito! La tarjeta se ha reiniciado a 0 sellos.");
     }
 }

@@ -1,5 +1,7 @@
 package com.fidely.controller;
 
+import com.fidely.dto.RedeemRequest;
+import com.fidely.dto.RedeemResponse;
 import com.fidely.dto.ScanRequest;
 import com.fidely.dto.ScanResponse;
 import com.fidely.service.WalletService;
@@ -23,5 +25,11 @@ public class ScanController {
         ScanResponse response = walletService.processScan(request);
         if (response.isSuccess()) return ResponseEntity.ok(response);
         else return ResponseEntity.badRequest().body(response);
+    }
+
+    @PostMapping("/redeem")
+    public ResponseEntity<RedeemResponse> redeemReward(@Valid @RequestBody RedeemRequest request) {
+        RedeemResponse response = walletService.redeemReward(request);
+        return ResponseEntity.ok(response);
     }
 }
