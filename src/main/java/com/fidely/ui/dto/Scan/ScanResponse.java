@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.ui.dto.Scan;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

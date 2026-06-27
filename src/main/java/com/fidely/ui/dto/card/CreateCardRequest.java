@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.ui.dto.card;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

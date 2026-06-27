@@ -1,6 +1,6 @@
-package com.fidely.repository;
+package com.fidely.dao.repository;
 
-import com.fidely.entity.Customer;
+import com.fidely.domain.entity.Customer;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

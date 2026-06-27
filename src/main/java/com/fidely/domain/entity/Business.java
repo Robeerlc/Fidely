@@ -1,4 +1,4 @@
-package com.fidely.entity;
+package com.fidely.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Business {
+public class Business implements User{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -57,4 +57,14 @@ public class Business {
     @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Override
+    public String getTokenSubject() {
+        return this.email;
+    }
+
+    @Override
+    public String getRole() {
+        return "BUSINESS";
+    }
 }

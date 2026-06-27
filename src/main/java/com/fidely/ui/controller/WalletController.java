@@ -1,12 +1,13 @@
-package com.fidely.controller;
+package com.fidely.ui.controller;
 
-import com.fidely.dto.CardResponse;
-import com.fidely.dto.CreateCardRequest;
-import com.fidely.entity.Business;
-import com.fidely.entity.WalletCard;
-import com.fidely.repository.BusinessRepository;
-import com.fidely.service.GoogleWalletService;
-import com.fidely.service.WalletService;
+
+import com.fidely.domain.entity.Business;
+import com.fidely.domain.entity.WalletCard;
+import com.fidely.dao.repository.BusinessRepository;
+import com.fidely.domain.service.GoogleWalletService;
+import com.fidely.domain.service.WalletService;
+import com.fidely.ui.dto.card.CardResponse;
+import com.fidely.ui.dto.card.CreateCardRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

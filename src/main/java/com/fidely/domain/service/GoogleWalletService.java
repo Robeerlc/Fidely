@@ -1,10 +1,10 @@
-package com.fidely.service;
+package com.fidely.domain.service;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.fidely.entity.Business;
-import com.fidely.entity.Customer;
-import com.fidely.entity.WalletCard;
+import com.fidely.domain.entity.Business;
+import com.fidely.domain.entity.Customer;
+import com.fidely.domain.entity.WalletCard;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;

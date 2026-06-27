@@ -1,8 +1,8 @@
-package com.fidely.controller;
+package com.fidely.ui.controller;
 
-import com.fidely.dto.ScanRequest;
-import com.fidely.dto.ScanResponse;
-import com.fidely.service.WalletService;
+import com.fidely.ui.dto.Scan.ScanRequest;
+import com.fidely.ui.dto.Scan.ScanResponse;
+import com.fidely.domain.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,4 +1,4 @@
-package com.fidely.entity;
+package com.fidely.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

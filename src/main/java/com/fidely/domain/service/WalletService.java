@@ -1,13 +1,14 @@
-package com.fidely.service;
+package com.fidely.domain.service;
 
-import com.fidely.dto.CreateCardRequest;
-import com.fidely.dto.ScanRequest;
-import com.fidely.dto.ScanResponse;
-import com.fidely.entity.*;
-import com.fidely.repository.BusinessRepository;
-import com.fidely.repository.CustomerRepository;
-import com.fidely.repository.ScanLogRepository;
-import com.fidely.repository.WalletCardRepository;
+import com.fidely.domain.entity.*;
+import com.fidely.ui.dto.Scan.ScanRequest;
+import com.fidely.ui.dto.Scan.ScanResponse;
+import com.fidely.dao.repository.BusinessRepository;
+import com.fidely.dao.repository.CustomerRepository;
+import com.fidely.dao.repository.ScanLogRepository;
+import com.fidely.dao.repository.WalletCardRepository;
+import com.fidely.ui.dto.card.CreateCardRequest;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // <-- IMPORTANTE
@@ -26,7 +27,7 @@ public class WalletService {
     private final ScanLogRepository scanLogRepository;
 
     @Transactional
-    public WalletCard createCardForCustomer(CreateCardRequest request) {
+    public WalletCard createCardForCustomer(@Valid CreateCardRequest request) {
         Business business = businessRepository.findById(request.businessId())
                 .orElseThrow(() -> new NoSuchElementException("Error: La peluquería no existe."));
 
