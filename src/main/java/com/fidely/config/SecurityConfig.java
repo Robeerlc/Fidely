@@ -38,6 +38,13 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
                         .requestMatchers("/api/v1/wallet/onboarding").permitAll()
 
+                        // Swagger
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
                         // Rutas Privadas
                         // Gestión de empleados (Solo Dueño)
                         .requestMatchers("/api/v1/business/employees/**").hasRole("BUSINESS")
