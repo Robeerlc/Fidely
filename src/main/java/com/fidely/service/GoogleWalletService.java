@@ -144,4 +144,31 @@ public class GoogleWalletService {
             throw new RuntimeException("Error generando el enlace de Google Wallet", e);
         }
     }
+
+    public void updateGenericClassForBusiness(Business business) {
+        try {
+            HttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+            Resource resource = resourceLoader.getResource(credentialsPath);
+            GoogleCredentials credentials;
+            try (InputStream is = resource.getInputStream()) {
+                credentials = GoogleCredentials.fromStream(is).createScoped(Collections.singleton("https://www.googleapis.com/auth/wallet_object.issuer"));
+            }
+            Walletobjects client = new Walletobjects.Builder(httpTransport, jsonFactory, new HttpCredentialsAdapter(credentials)).setApplicationName("Fidely").build();
+
+            String classId = String.format("%s.business_%d_premium", issuerId, business.getId());
+            String brandName = business.getBrandName() != null ? business.getBrandName() : business.getName();
+            GenericClass genericClass = new GenericClass().setId(classId);
+
+            try {
+                System.out.println("Actualizando plantilla Premium en Google Wallet para: " + brandName);
+                client.genericclass().update(classId, genericClass).execute();
+                System.out.println("Plantilla actualizada con éxito");
+            } catch (Exception e) {
+                System.err.println("Error al actualizar la clase en Google: " + e.getMessage());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Error crítico de infraestructura en Google Wallet al actualizar", e);
+        }
+    }
 }
