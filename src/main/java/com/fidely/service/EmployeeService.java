@@ -8,6 +8,9 @@ import com.fidely.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -30,5 +33,22 @@ public class EmployeeService {
                 .business(business)
                 .build();
         employeeRepository.save(employee);
+    }
+
+    public List<Employee> getEmployees(String ownerEmail) {
+        Business business = businessRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado"));
+        return employeeRepository.findByBusinessId(business.getId());
+    }
+
+    @Transactional
+    public void deleteEmployee(Long employeeId, String ownerEmail) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Empleado no encontrado"));
+
+        if (!employee.getBusiness().getEmail().equals(ownerEmail))
+            throw new RuntimeException("No tienes permiso para borrar este empleado");
+
+        employeeRepository.delete(employee);
     }
 }
