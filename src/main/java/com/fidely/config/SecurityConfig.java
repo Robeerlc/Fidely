@@ -39,9 +39,18 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/wallet/onboarding").permitAll()
 
                         // Rutas Privadas
-                        .requestMatchers("/api/v1/business/**").hasRole("BUSINESS")
-                        .requestMatchers("/api/v1/scan/**").hasRole("BUSINESS")
+                        // Gestión de empleados (Solo Dueño)
+                        .requestMatchers("/api/v1/business/employees/**").hasRole("BUSINESS")
+
+                        // Escaneo y Canjeo (Dueño Y Empleado)
+                        .requestMatchers("/api/v1/scan/**").hasAnyRole("BUSINESS", "EMPLOYEE")
+
+                        // Gestión de Wallet (Solo Dueño)
                         .requestMatchers("/api/v1/wallet/**").hasRole("BUSINESS")
+
+                        // Perfil/Dashboard del Negocio (Solo Dueño)
+                        .requestMatchers("/api/v1/business/**").hasRole("BUSINESS")
+
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

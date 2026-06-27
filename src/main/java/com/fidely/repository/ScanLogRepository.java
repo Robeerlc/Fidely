@@ -14,4 +14,5 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
 
     List<ScanLog> findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(Long businessId);
 
+    List<ScanLog> findByWalletCard_Business_Id(Long walletCardBusinessId);
 }

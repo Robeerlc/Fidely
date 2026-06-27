@@ -7,10 +7,9 @@ import com.fidely.dto.response.BusinessProfileResponse;
 import com.fidely.dto.response.RegisterResponse;
 import com.fidely.dto.response.statistics.ActivityLogResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
-import com.fidely.entity.Business;
-import com.fidely.entity.ScanLog;
-import com.fidely.entity.ScanType;
+import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
+import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,17 +30,18 @@ public class BusinessService {
     private final ScanLogRepository scanLogRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final EmployeeRepository employeeRepository;
 
-    @Transactional(readOnly = true)
-    public RegisterResponse loginBusiness(LoginRequest request) {
-        Business business = businessRepository.findByEmail(request.email())
-                .orElseThrow(() -> new RuntimeException("Credenciales incorrectas."));
+    public RegisterResponse login(LoginRequest request) {
+        Optional<Business> business = businessRepository.findByEmail(request.email());
+        if (business.isPresent() && passwordEncoder.matches(request.password(), business.get().getPassword()))
+            return new RegisterResponse(jwtService.generateToken(business.get()));
 
-        if (!passwordEncoder.matches(request.password(), business.getPassword()))
-            throw new RuntimeException("Credenciales incorrectas.");
+        Optional<Employee> employee = employeeRepository.findByEmail(request.email());
+        if (employee.isPresent() && passwordEncoder.matches(request.password(), employee.get().getPassword()))
+            return new RegisterResponse(jwtService.generateToken(employee.get()));
 
-        String token = jwtService.generateToken(business);
-        return new RegisterResponse(token);
+        throw new RuntimeException("Credenciales inválidas");
     }
 
     @Transactional
@@ -98,10 +99,10 @@ public class BusinessService {
         List<ActivityLogResponse> activities = recentLogs.stream()
                 .map(log -> {
                     String action = log.getScanType() == ScanType.EARN_STAMP ? "Sello añadido ✂️" : "Premio canjeado 🎁";
-                    String customerName = log.getWalletCard().getCustomer().getName();
                     return ActivityLogResponse.builder()
-                            .customerName(customerName != null ? customerName : "Cliente VIP")
+                            .customerName(log.getWalletCard().getCustomer().getName())
                             .action(action)
+                            .employeeName(log.getEmployee() != null ? log.getEmployee().getName() : "Dueño")
                             .timestamp(log.getScannedAt())
                             .build();
                 }).toList();

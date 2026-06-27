@@ -28,4 +28,8 @@ public class ScanLog {
     @Builder.Default
     @Column(name = "scanned_at", nullable = false, updatable = false)
     private LocalDateTime scannedAt = LocalDateTime.now();
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    private Employee employee;
 }

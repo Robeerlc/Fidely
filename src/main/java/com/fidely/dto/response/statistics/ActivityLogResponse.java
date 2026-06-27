@@ -10,5 +10,6 @@ import java.time.LocalDateTime;
 public class ActivityLogResponse {
     private String customerName;
     private String action;
+    private String employeeName;
     private LocalDateTime timestamp;
 }

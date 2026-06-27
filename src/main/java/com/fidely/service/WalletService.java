@@ -10,14 +10,17 @@ import com.fidely.dto.response.card.RedeemResponse;
 import com.fidely.dto.response.card.ScanResponse;
 import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
+import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -30,6 +33,7 @@ public class WalletService {
     private final GoogleWalletService googleWalletService;
     private final CustomerService customerService;
     private final EmailService emailService;
+    private final EmployeeRepository employeeRepository;
 
     @Transactional
     public WalletCard createCardForCustomer(CreateCardRequest request) {
@@ -102,9 +106,13 @@ public class WalletService {
         card.setCurrentStamps(card.getCurrentStamps() + 1);
         walletCardRepository.save(card);
 
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Employee employee = employeeRepository.findByEmail(email).orElse(null);
+
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.EARN_STAMP)
+                .employee(employee)
                 .scannedAt(LocalDateTime.now())
                 .build();
         scanLogRepository.save(scanLog);
@@ -125,19 +133,22 @@ public class WalletService {
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
         if (card.getCurrentStamps() < card.getMaxStamps())
-            throw new RuntimeException("El cliente no tiene los sellos necesarios ("
-                    + card.getCurrentStamps() + "/" + card.getMaxStamps() + ").");
+            throw new RuntimeException("El cliente no tiene los sellos necesarios.");
+
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Employee employee = employeeRepository.findByEmail(email).orElse(null);
 
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.REDEEM_REWARD)
+                .employee(employee)
                 .scannedAt(LocalDateTime.now())
                 .build();
         scanLogRepository.save(scanLog);
 
         card.setCurrentStamps(0);
         walletCardRepository.save(card);
-        return new RedeemResponse(true, "¡Premio canjeado con éxito! La tarjeta se ha reiniciado a 0 sellos.");
+        return new RedeemResponse(true, "¡Premio canjeado!");
     }
 
     @Transactional(readOnly = true)
