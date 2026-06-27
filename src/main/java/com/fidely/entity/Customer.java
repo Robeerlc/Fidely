@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Customer {
+public class Customer implements User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,4 +30,14 @@ public class Customer {
     @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Override
+    public String getTokenSubject() {
+        return this.email;
+    }
+
+    @Override
+    public String getRole() {
+        return "CUSTOMER";
+    }
 }

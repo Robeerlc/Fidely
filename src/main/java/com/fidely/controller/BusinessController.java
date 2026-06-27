@@ -1,11 +1,10 @@
 package com.fidely.controller;
 
-import com.fidely.dto.BusinessProfileRequest;
-import com.fidely.dto.BusinessProfileResponse;
-import com.fidely.dto.DashboardResponse;
+import com.fidely.dto.*;
 import com.fidely.service.BusinessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +14,12 @@ import org.springframework.web.bind.annotation.*;
 public class BusinessController {
 
     private final BusinessService businessService;
+
+    @PostMapping("/register")
+    public ResponseEntity<RegisterResponse> registerBusiness(@Valid @RequestBody RegisterBusinessRequest request) {
+        RegisterResponse response = businessService.registerBusiness(request);
+        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
 
     @PutMapping("/{businessId}/profile")
     public ResponseEntity<BusinessProfileResponse> updateProfile(@PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
