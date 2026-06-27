@@ -35,7 +35,6 @@ public class SecurityConfig {
                         // Rutas Públicas
                         .requestMatchers("/api/v1/business/register").permitAll()
                         .requestMatchers("/api/v1/business/login").permitAll()
-                        .requestMatchers("/api/v1/customer/register").permitAll()
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
                         .requestMatchers("/api/v1/wallet/onboarding").permitAll()
 
