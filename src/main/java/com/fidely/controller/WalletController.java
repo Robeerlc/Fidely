@@ -25,7 +25,6 @@ public class WalletController {
     @PostMapping("/create")
     public ResponseEntity<CardResponse> createCard(@Valid @RequestBody CreateCardRequest request) {
         WalletCard card = walletService.createCardForCustomer(request);
-
         CardResponse response = new CardResponse(
                 card.getId(),
                 card.getSecureUuid(),
@@ -38,13 +37,9 @@ public class WalletController {
 
     @PostMapping("/business/{businessId}/sync-google")
     public ResponseEntity<String> syncBusinessWithGoogleWallet(@PathVariable Long businessId) {
-        Business business = businessRepository.findById(businessId).orElse(null);
-        if (business == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Negocio no encontrado");
-        try {
-            googleWalletService.createGenericClassForBusiness(business);
-            return ResponseEntity.ok("Plantilla de Google Wallet creada/actualizada con éxito para: " + business.getBrandName());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error sincronizando con Google: " + e.getMessage());
-        }
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado"));
+        googleWalletService.createGenericClassForBusiness(business);
+        return ResponseEntity.ok("Plantilla de Google Wallet creada/actualizada con éxito para: " + business.getBrandName());
     }
 }
