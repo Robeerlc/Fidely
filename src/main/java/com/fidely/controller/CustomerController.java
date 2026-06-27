@@ -1,7 +1,7 @@
 package com.fidely.controller;
 
-import com.fidely.dto.RegisterCustomerRequest;
-import com.fidely.dto.RegisterResponse;
+import com.fidely.dto.request.RegisterCustomerRequest;
+import com.fidely.dto.response.RegisterResponse;
 import com.fidely.service.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -1,7 +1,7 @@
 package com.fidely.service;
 
-import com.fidely.dto.RegisterCustomerRequest;
-import com.fidely.dto.RegisterResponse;
+import com.fidely.dto.request.RegisterCustomerRequest;
+import com.fidely.dto.response.RegisterResponse;
 import com.fidely.entity.Customer;
 import com.fidely.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;

@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

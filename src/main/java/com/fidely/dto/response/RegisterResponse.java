@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.dto.response;
 
 public record RegisterResponse(
         String token

@@ -1,7 +1,7 @@
 package com.fidely.controller;
 
-import com.fidely.dto.CardResponse;
-import com.fidely.dto.CreateCardRequest;
+import com.fidely.dto.response.card.CardResponse;
+import com.fidely.dto.request.card.CreateCardRequest;
 import com.fidely.entity.Business;
 import com.fidely.entity.WalletCard;
 import com.fidely.repository.BusinessRepository;

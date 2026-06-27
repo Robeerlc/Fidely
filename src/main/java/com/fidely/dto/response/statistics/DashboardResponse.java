@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.dto.response.statistics;
 
 import lombok.Builder;
 import lombok.Data;
@@ -11,5 +11,5 @@ public class DashboardResponse {
     private long totalCustomers;
     private long totalStampsGiven;
     private long totalRewardsRedeemed;
-    private List<ActivityLogDto> recentActivity;
+    private List<ActivityLogResponse> recentActivity;
 }

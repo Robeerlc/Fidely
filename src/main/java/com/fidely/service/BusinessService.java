@@ -1,6 +1,11 @@
 package com.fidely.service;
 
-import com.fidely.dto.*;
+import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.RegisterBusinessRequest;
+import com.fidely.dto.response.statistics.ActivityLogResponse;
+import com.fidely.dto.response.BusinessProfileResponse;
+import com.fidely.dto.response.statistics.DashboardResponse;
+import com.fidely.dto.response.RegisterResponse;
 import com.fidely.entity.Business;
 import com.fidely.entity.ScanLog;
 import com.fidely.entity.ScanType;
@@ -78,11 +83,11 @@ public class BusinessService {
 
         List<ScanLog> recentLogs = scanLogRepository.findTop10ByBusinessIdOrderByScannedAtDesc(businessId);
 
-        List<ActivityLogDto> activities = recentLogs.stream()
+        List<ActivityLogResponse> activities = recentLogs.stream()
                 .map(log -> {
                     String action = log.getScanType() == ScanType.EARN_STAMP ? "Sello añadido ✂️" : "Premio canjeado 🎁";
                     String customerName = log.getWalletCard().getCustomer().getName();
-                    return ActivityLogDto.builder()
+                    return ActivityLogResponse.builder()
                             .customerName(customerName != null ? customerName : "Cliente VIP")
                             .action(action)
                             .timestamp(log.getScannedAt())

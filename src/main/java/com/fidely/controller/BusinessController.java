@@ -1,6 +1,10 @@
 package com.fidely.controller;
 
-import com.fidely.dto.*;
+import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.RegisterBusinessRequest;
+import com.fidely.dto.response.BusinessProfileResponse;
+import com.fidely.dto.response.statistics.DashboardResponse;
+import com.fidely.dto.response.RegisterResponse;
 import com.fidely.service.BusinessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

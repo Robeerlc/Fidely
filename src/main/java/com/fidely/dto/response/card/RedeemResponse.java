@@ -1,4 +1,4 @@
-package com.fidely.dto;
+package com.fidely.dto.response.card;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

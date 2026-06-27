@@ -1,6 +1,10 @@
 package com.fidely.controller;
 
-import com.fidely.dto.*;
+import com.fidely.dto.request.card.RedeemRequest;
+import com.fidely.dto.request.card.ScanRequest;
+import com.fidely.dto.response.card.CardInfoResponse;
+import com.fidely.dto.response.card.RedeemResponse;
+import com.fidely.dto.response.card.ScanResponse;
 import com.fidely.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
