@@ -1,9 +1,6 @@
 package com.fidely.service;
 
-import com.fidely.dto.ActivityLogDto;
-import com.fidely.dto.BusinessProfileRequest;
-import com.fidely.dto.BusinessProfileResponse;
-import com.fidely.dto.DashboardResponse;
+import com.fidely.dto.*;
 import com.fidely.entity.Business;
 import com.fidely.entity.ScanLog;
 import com.fidely.entity.ScanType;
@@ -11,6 +8,7 @@ import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +22,22 @@ public class BusinessService {
     private final GoogleWalletService googleWalletService;
     private final WalletCardRepository walletCardRepository;
     private final ScanLogRepository scanLogRepository;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
+
+    @Transactional
+    public RegisterResponse registerBusiness(RegisterBusinessRequest request) {
+        if (businessRepository.existsByEmail(request.email())) return null;
+        Business business = Business.builder()
+                .name(request.name())
+                .phoneNumber(request.phoneNumber())
+                .email(request.email())
+                .brandName(request.brandName())
+                .password(passwordEncoder.encode(request.password()))
+                .build();
+        businessRepository.save(business);
+        return new RegisterResponse(jwtService.generateToken(business));
+    }
 
     @Transactional
     public BusinessProfileResponse updateProfile(Long businessId, BusinessProfileRequest request) {
