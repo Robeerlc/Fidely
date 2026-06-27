@@ -32,10 +32,14 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Rutas Públicas
                         .requestMatchers("/api/v1/business/register").permitAll()
                         .requestMatchers("/api/v1/business/login").permitAll()
                         .requestMatchers("/api/v1/customer/register").permitAll()
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
+                        .requestMatchers("/api/v1/wallet/onboarding").permitAll()
+
+                        // Rutas Privadas
                         .requestMatchers("/api/v1/business/**").hasRole("BUSINESS")
                         .requestMatchers("/api/v1/scan/**").hasRole("BUSINESS")
                         .requestMatchers("/api/v1/wallet/**").hasRole("BUSINESS")
