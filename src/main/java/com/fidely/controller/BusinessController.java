@@ -1,10 +1,11 @@
 package com.fidely.controller;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
-import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.dto.response.RegisterResponse;
+import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.service.BusinessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,12 @@ public class BusinessController {
     public ResponseEntity<RegisterResponse> registerBusiness(@Valid @RequestBody RegisterBusinessRequest request) {
         RegisterResponse response = businessService.registerBusiness(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<RegisterResponse> loginBusiness(@Valid @RequestBody LoginRequest request) {
+        RegisterResponse response = businessService.loginBusiness(request);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{businessId}/profile")

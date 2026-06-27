@@ -1,11 +1,12 @@
 package com.fidely.service;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
-import com.fidely.dto.response.statistics.ActivityLogResponse;
 import com.fidely.dto.response.BusinessProfileResponse;
-import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.dto.response.RegisterResponse;
+import com.fidely.dto.response.statistics.ActivityLogResponse;
+import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.entity.Business;
 import com.fidely.entity.ScanLog;
 import com.fidely.entity.ScanType;
@@ -29,6 +30,18 @@ public class BusinessService {
     private final ScanLogRepository scanLogRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+
+    @Transactional(readOnly = true)
+    public RegisterResponse loginBusiness(LoginRequest request) {
+        Business business = businessRepository.findByEmail(request.email())
+                .orElseThrow(() -> new RuntimeException("Credenciales incorrectas."));
+
+        if (!passwordEncoder.matches(request.password(), business.getPassword()))
+            throw new RuntimeException("Credenciales incorrectas.");
+
+        String token = jwtService.generateToken(business);
+        return new RegisterResponse(token);
+    }
 
     @Transactional
     public RegisterResponse registerBusiness(RegisterBusinessRequest request) {

@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/business/register").permitAll()
+                        .requestMatchers("/api/v1/business/login").permitAll()
                         .requestMatchers("/api/v1/customer/register").permitAll()
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
                         .requestMatchers("/api/v1/business/**").hasRole("BUSINESS")
