@@ -1,17 +1,11 @@
 package com.fidely.controller;
 
-import com.fidely.dto.RedeemRequest;
-import com.fidely.dto.RedeemResponse;
-import com.fidely.dto.ScanRequest;
-import com.fidely.dto.ScanResponse;
+import com.fidely.dto.*;
 import com.fidely.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/v1/scan")
@@ -30,6 +24,12 @@ public class ScanController {
     @PostMapping("/redeem")
     public ResponseEntity<RedeemResponse> redeemReward(@Valid @RequestBody RedeemRequest request) {
         RedeemResponse response = walletService.redeemReward(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/info/{secureUuid}")
+    public ResponseEntity<CardInfoResponse> getCardInfo(@PathVariable String secureUuid, @RequestParam Long businessId) {
+        CardInfoResponse response = walletService.getCardInfo(secureUuid, businessId);
         return ResponseEntity.ok(response);
     }
 }

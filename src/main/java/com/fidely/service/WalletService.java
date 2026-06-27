@@ -105,4 +105,21 @@ public class WalletService {
         walletCardRepository.save(card);
         return new RedeemResponse(true, "¡Premio canjeado con éxito! La tarjeta se ha reiniciado a 0 sellos.");
     }
+
+    @Transactional(readOnly = true)
+    public CardInfoResponse getCardInfo(String secureUuid, Long businessId) {
+        WalletCard card = walletCardRepository.findBySecureUuid(secureUuid)
+                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o UUID inválido."));
+
+        if (!card.getBusiness().getId().equals(businessId))
+            throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
+
+        boolean isCompleted = card.getCurrentStamps() >= card.getMaxStamps();
+        return new CardInfoResponse(
+                card.getCustomer().getName() != null ? card.getCustomer().getName() : "Cliente VIP",
+                card.getCurrentStamps(),
+                card.getMaxStamps(),
+                isCompleted
+        );
+    }
 }
