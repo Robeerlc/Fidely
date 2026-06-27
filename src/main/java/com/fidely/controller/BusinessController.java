@@ -2,6 +2,7 @@ package com.fidely.controller;
 
 import com.fidely.dto.BusinessProfileRequest;
 import com.fidely.dto.BusinessProfileResponse;
+import com.fidely.dto.DashboardResponse;
 import com.fidely.service.BusinessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,12 @@ public class BusinessController {
     @PutMapping("/{businessId}/profile")
     public ResponseEntity<BusinessProfileResponse> updateProfile(@PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
         BusinessProfileResponse response = businessService.updateProfile(businessId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{businessId}/dashboard")
+    public ResponseEntity<DashboardResponse> getDashboardMetrics(@PathVariable Long businessId) {
+        DashboardResponse response = businessService.getDashboardMetrics(businessId);
         return ResponseEntity.ok(response);
     }
 }

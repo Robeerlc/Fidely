@@ -1,12 +1,20 @@
 package com.fidely.service;
 
+import com.fidely.dto.ActivityLogDto;
 import com.fidely.dto.BusinessProfileRequest;
 import com.fidely.dto.BusinessProfileResponse;
+import com.fidely.dto.DashboardResponse;
 import com.fidely.entity.Business;
+import com.fidely.entity.ScanLog;
+import com.fidely.entity.ScanType;
 import com.fidely.repository.BusinessRepository;
+import com.fidely.repository.ScanLogRepository;
+import com.fidely.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -14,6 +22,8 @@ public class BusinessService {
 
     private final BusinessRepository businessRepository;
     private final GoogleWalletService googleWalletService;
+    private final WalletCardRepository walletCardRepository;
+    private final ScanLogRepository scanLogRepository;
 
     @Transactional
     public BusinessProfileResponse updateProfile(Long businessId, BusinessProfileRequest request) {
@@ -40,6 +50,36 @@ public class BusinessService {
                 .rewardDescription(updatedBusiness.getRewardDescription())
                 .bookingUrl(updatedBusiness.getBookingUrl())
                 .instagramUrl(updatedBusiness.getInstagramUrl())
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public DashboardResponse getDashboardMetrics(Long businessId) {
+        businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+
+        long totalCustomers = walletCardRepository.countByBusinessId(businessId);
+        long totalStamps = scanLogRepository.countByBusinessIdAndScanType(businessId, ScanType.EARN_STAMP);
+        long totalRewards = scanLogRepository.countByBusinessIdAndScanType(businessId, ScanType.REDEEM_REWARD);
+
+        List<ScanLog> recentLogs = scanLogRepository.findTop10ByBusinessIdOrderByScannedAtDesc(businessId);
+
+        List<ActivityLogDto> activities = recentLogs.stream()
+                .map(log -> {
+                    String action = log.getScanType() == ScanType.EARN_STAMP ? "Sello añadido ✂️" : "Premio canjeado 🎁";
+                    String customerName = log.getWalletCard().getCustomer().getName();
+                    return ActivityLogDto.builder()
+                            .customerName(customerName != null ? customerName : "Cliente VIP")
+                            .action(action)
+                            .timestamp(log.getScannedAt())
+                            .build();
+                }).toList();
+
+        return DashboardResponse.builder()
+                .totalCustomers(totalCustomers)
+                .totalStampsGiven(totalStamps)
+                .totalRewardsRedeemed(totalRewards)
+                .recentActivity(activities)
                 .build();
     }
 }
