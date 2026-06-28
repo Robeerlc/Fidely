@@ -6,6 +6,7 @@ import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
 import com.fidely.dto.response.RegisterResponse;
 import com.fidely.dto.response.statistics.ActivityLogResponse;
+import com.fidely.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.entity.Business;
 import com.fidely.entity.ScanLog;
@@ -45,12 +46,14 @@ public class BusinessController {
 
     @PutMapping("/{businessId}/profile")
     public ResponseEntity<BusinessProfileResponse> updateProfile(@PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
+        validateBusinessOwnership(businessId);
         BusinessProfileResponse response = businessService.updateProfile(businessId, request);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{businessId}/dashboard")
     public ResponseEntity<DashboardResponse> getDashboardMetrics(@PathVariable Long businessId) {
+        validateBusinessOwnership(businessId);
         DashboardResponse response = businessService.getDashboardMetrics(businessId);
         return ResponseEntity.ok(response);
     }
@@ -68,5 +71,26 @@ public class BusinessController {
                 .timestamp(log.getScannedAt())
                 .build()).toList();
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{businessId}/segments/vip")
+    public ResponseEntity<List<CustomerSegmentResponse>> getVipCustomers(@PathVariable Long businessId) {
+        validateBusinessOwnership(businessId);
+        return ResponseEntity.ok(businessService.getVipCustomers(businessId));
+    }
+
+    @GetMapping("/{businessId}/segments/at-risk")
+    public ResponseEntity<List<CustomerSegmentResponse>> getAtRiskCustomers(@PathVariable Long businessId) {
+        validateBusinessOwnership(businessId);
+        return ResponseEntity.ok(businessService.getAtRiskCustomers(businessId));
+    }
+
+    private void validateBusinessOwnership(Long businessId) {
+        String ownerEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Business business = businessRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+
+        if (!business.getId().equals(businessId))
+            throw new RuntimeException("Acceso denegado. No tienes permiso para ver los datos de este negocio.");
     }
 }

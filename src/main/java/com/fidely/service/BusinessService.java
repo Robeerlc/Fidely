@@ -6,8 +6,12 @@ import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
 import com.fidely.dto.response.RegisterResponse;
 import com.fidely.dto.response.statistics.ActivityLogResponse;
+import com.fidely.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
-import com.fidely.entity.*;
+import com.fidely.entity.Business;
+import com.fidely.entity.Employee;
+import com.fidely.entity.ScanLog;
+import com.fidely.entity.ScanType;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
@@ -17,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,5 +118,39 @@ public class BusinessService {
                 .totalRewardsRedeemed(totalRewards)
                 .recentActivity(activities)
                 .build();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerSegmentResponse> getVipCustomers(Long businessId) {
+        List<ScanLogRepository.VipCustomerProjection> results = scanLogRepository.findTopVipCustomers(businessId);
+
+        return results.stream()
+                .limit(50)
+                .map(proj -> CustomerSegmentResponse.builder()
+                        .customerName(proj.getCustomer().getName() != null ? proj.getCustomer().getName() : "Cliente VIP")
+                        .email(proj.getCustomer().getEmail())
+                        .phoneNumber(proj.getCustomer().getPhoneNumber())
+                        .metricValue(proj.getVisitCount())
+                        .segmentInfo(proj.getVisitCount() + " visitas totales")
+                        .build()
+                ).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerSegmentResponse> getAtRiskCustomers(Long businessId) {
+        LocalDateTime sixtyDaysAgo = LocalDateTime.now().minusDays(60);
+        List<ScanLogRepository.AtRiskCustomerProjection> results = scanLogRepository.findAtRiskCustomers(businessId, sixtyDaysAgo);
+
+        return results.stream()
+                .map(proj -> {
+                    long daysSinceLastVisit = java.time.Duration.between(proj.getLastVisit(), LocalDateTime.now()).toDays();
+                    return CustomerSegmentResponse.builder()
+                            .customerName(proj.getCustomer().getName() != null ? proj.getCustomer().getName() : "Cliente")
+                            .email(proj.getCustomer().getEmail())
+                            .phoneNumber(proj.getCustomer().getPhoneNumber())
+                            .metricValue(daysSinceLastVisit)
+                            .segmentInfo("Última visita hace " + daysSinceLastVisit + " días")
+                            .build();
+                }).toList();
     }
 }
