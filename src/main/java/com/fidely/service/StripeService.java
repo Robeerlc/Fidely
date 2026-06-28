@@ -50,7 +50,6 @@ public class StripeService {
                 PaymentMethodAttachParams.builder().setCustomer(customerId).build()
         );
 
-        //seteas la forma de pago por defecto a la que introduce
         stripeClient.v1().customers().update(
                 customerId,
                 CustomerUpdateParams.builder()
@@ -62,7 +61,6 @@ public class StripeService {
                         .build()
         );
 
-        //creas la subscripcion y el pago inicial se marca como incomplete hasta que el front verifique
         Subscription sub = stripeClient.v1().subscriptions().create(
                 SubscriptionCreateParams.builder()
                         .setCustomer(customerId)
@@ -76,13 +74,11 @@ public class StripeService {
                         .build()
         );
 
-        //sacas el intento de cobro
         Invoice invoice = sub.getLatestInvoiceObject();
         String paymentIntentId = invoice.getRawJsonObject()
                 .get("payment_intent")
                 .getAsString();
 
-        //devuelves un token temporal que el frontend usa para confirmar en stripe el pago del user
         PaymentIntent pi = stripeClient.v1().paymentIntents().retrieve(paymentIntentId);
         return pi.getClientSecret();
     }
@@ -92,13 +88,38 @@ public class StripeService {
     }
 
 
+
     public void processWebhook(String payload, String signature, String webhookSecret) throws StripeException {
         Event event = Webhook.constructEvent(payload, signature, webhookSecret);
 
         switch (event.getType()) {
-            case "invoice.payment_succeeded"     -> System.out.println("Pago OK: " + event.getId());
-            case "invoice.payment_failed"        -> System.out.println("Pago fallido: " + event.getId());
-            case "customer.subscription.deleted" -> System.out.println("Suscripción cancelada: " + event.getId());
+            case "invoice.payment_succeeded" -> {
+                Invoice invoice = (Invoice) event.getDataObjectDeserializer().getObject().orElse(null);
+                if (invoice != null && invoice.getCustomer() != null) {
+                    businessRepository.findByStripeCustomerId(invoice.getCustomer())
+                            .ifPresent(business -> {
+                                business.setSubscriptionActive(true);
+                                businessRepository.save(business);
+                                System.out.println("Suscripción ACTIVADA para: " + business.getEmail());
+                            });
+                }
+            }
+            case "invoice.payment_failed", "customer.subscription.deleted" -> {
+                Object dataObj = event.getDataObjectDeserializer().getObject().orElse(null);
+                String customerId = null;
+
+                if (dataObj instanceof Invoice inv) customerId = inv.getCustomer();
+                else if (dataObj instanceof Subscription sub) customerId = sub.getCustomer();
+
+                if (customerId != null) {
+                    businessRepository.findByStripeCustomerId(customerId)
+                            .ifPresent(business -> {
+                                business.setSubscriptionActive(false);
+                                businessRepository.save(business);
+                                System.out.println("Suscripción DESACTIVADA para: " + business.getEmail());
+                            });
+                }
+            }
         }
     }
 }

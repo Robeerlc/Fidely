@@ -12,4 +12,6 @@ public interface BusinessRepository extends JpaRepository<Business, Long> {
     Optional<Business> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    Optional<Business> findByStripeCustomerId(String stripeCustomerId);
 }
