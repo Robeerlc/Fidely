@@ -55,6 +55,10 @@ public class Business implements User {
     private String instagramUrl;
 
     @Builder.Default
+    @Column(name = "is_subscription_active", nullable = false)
+    private boolean isSubscriptionActive = false; // Por defecto es false hasta que Stripe confirme el pago
+
+    @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
