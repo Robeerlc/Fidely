@@ -20,23 +20,11 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
 
     List<ScanLog> findByWalletCard_Business_Id(Long walletCardBusinessId);
 
-    // Clientes VIP: los que más sellos han ganado ordenados de mayor a menor
-    interface VipCustomerProjection {
-        Customer getCustomer();
-        Long getVisitCount();
-    }
-
     @Query("SELECT l.walletCard.customer AS customer, COUNT(l) AS visitCount FROM ScanLog l " +
             "WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
             "GROUP BY l.walletCard.customer " +
             "ORDER BY visitCount DESC")
     List<VipCustomerProjection> findTopVipCustomers(@Param("businessId") Long businessId);
-
-    // Clientes en Riesgo: cuya última visita es anterior a una fecha límite
-    interface AtRiskCustomerProjection {
-        Customer getCustomer();
-        LocalDateTime getLastVisit();
-    }
 
     @Query("SELECT l.walletCard.customer AS customer, MAX(l.scannedAt) AS lastVisit FROM ScanLog l " +
             "WHERE l.walletCard.business.id = :businessId " +
@@ -45,14 +33,30 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
             "ORDER BY lastVisit ASC")
     List<AtRiskCustomerProjection> findAtRiskCustomers(@Param("businessId") Long businessId, @Param("limitDate") LocalDateTime limitDate);
 
-    interface VisitStatsProjection {
-        LocalDateTime getFirstVisit();
-        LocalDateTime getLastVisit();
-        Long getVisitCount();
-    }
-
     @Query("SELECT MIN(l.scannedAt) as firstVisit, MAX(l.scannedAt) as lastVisit, COUNT(l) as visitCount " +
             "FROM ScanLog l WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
             "GROUP BY l.walletCard.id HAVING COUNT(l) > 1")
     List<VisitStatsProjection> findVisitStatsByBusiness(@Param("businessId") Long businessId);
+
+    // Clientes VIP: los que más sellos han ganado ordenados de mayor a menor
+    interface VipCustomerProjection {
+        Customer getCustomer();
+
+        Long getVisitCount();
+    }
+
+    // Clientes en Riesgo: cuya última visita es anterior a una fecha límite
+    interface AtRiskCustomerProjection {
+        Customer getCustomer();
+
+        LocalDateTime getLastVisit();
+    }
+
+    interface VisitStatsProjection {
+        LocalDateTime getFirstVisit();
+
+        LocalDateTime getLastVisit();
+
+        Long getVisitCount();
+    }
 }

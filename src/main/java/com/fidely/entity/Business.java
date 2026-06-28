@@ -57,7 +57,7 @@ public class Business implements User {
     @Builder.Default
     @Column(name = "is_subscription_active", nullable = false)
     private boolean isSubscriptionActive = false;
-  
+
     @Column(name = "average_ticket_price", nullable = false)
     private Double averageTicketPrice = 15.0;
 

@@ -2,6 +2,7 @@ package com.fidely.config;
 
 import com.fidely.dto.response.ErrorResponse;
 import com.fidely.dto.response.stripe.StripeResponse;
+import com.fidely.exception.SubscriptionInactiveException;
 import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,5 +59,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(StripeException.class)
     public ResponseEntity<StripeResponse> handleStripeException(StripeException e) {
         return ResponseEntity.badRequest().body(new StripeResponse("Error de Stripe: " + e.getMessage(), null));
+    }
+
+    @ExceptionHandler(SubscriptionInactiveException.class)
+    public ResponseEntity<ErrorResponse> handleSubscriptionInactive(SubscriptionInactiveException ex) {
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(LocalDateTime.now())
+                .status(HttpStatus.PAYMENT_REQUIRED.value())
+                .error("Payment Required")
+                .message(ex.getMessage())
+                .build();
+        return new ResponseEntity<>(error, HttpStatus.PAYMENT_REQUIRED);
     }
 }

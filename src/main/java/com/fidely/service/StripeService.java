@@ -88,7 +88,6 @@ public class StripeService {
     }
 
 
-
     public void processWebhook(String payload, String signature, String webhookSecret) throws StripeException {
         Event event = Webhook.constructEvent(payload, signature, webhookSecret);
 

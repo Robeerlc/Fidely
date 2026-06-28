@@ -9,6 +9,7 @@ import com.fidely.dto.response.card.CardInfoResponse;
 import com.fidely.dto.response.card.RedeemResponse;
 import com.fidely.dto.response.card.ScanResponse;
 import com.fidely.entity.*;
+import com.fidely.exception.SubscriptionInactiveException;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
@@ -97,6 +98,9 @@ public class WalletService {
         Employee employee = employeeRepository.findByEmail(email).orElse(null);
         Business authBusiness = (employee != null) ? employee.getBusiness() : businessRepository.findByEmail(email).orElseThrow();
 
+        if (!authBusiness.isSubscriptionActive())
+            throw new SubscriptionInactiveException("La suscripción del local está inactiva. El escáner ha sido bloqueado temporalmente.");
+
         if (!card.getBusiness().getId().equals(authBusiness.getId()))
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
@@ -107,7 +111,6 @@ public class WalletService {
         int amountToAdd = request.getAmount() != null && request.getAmount() > 0 ? request.getAmount() : 1;
         if (card.getCurrentStamps() + amountToAdd > card.getMaxStamps())
             amountToAdd = card.getMaxStamps() - card.getCurrentStamps();
-
 
         card.setCurrentStamps(card.getCurrentStamps() + amountToAdd);
         walletCardRepository.save(card);

@@ -11,6 +11,7 @@ import com.fidely.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
 import com.fidely.entity.Business;
 import com.fidely.entity.ScanLog;
+import com.fidely.exception.SubscriptionInactiveException;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.service.BusinessService;
@@ -117,5 +118,8 @@ public class BusinessController {
 
         if (!business.getId().equals(businessId))
             throw new RuntimeException("Acceso denegado. No tienes permiso para ver los datos de este negocio.");
+
+        if (!business.isSubscriptionActive())
+            throw new SubscriptionInactiveException("Tu suscripción está inactiva. Por favor, actualiza tu método de pago para ver tus métricas y campañas.");
     }
 }
