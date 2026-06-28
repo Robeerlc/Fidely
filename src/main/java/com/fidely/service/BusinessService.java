@@ -36,7 +36,6 @@ public class BusinessService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
     private final EmailService emailService;
-    private final BusinessService businessService;
 
     public RegisterResponse login(LoginRequest request) {
         Optional<Business> business = businessRepository.findByEmail(request.email());
@@ -176,16 +175,17 @@ public class BusinessService {
                 }).toList();
     }
 
+    @Transactional(readOnly = true)
     public void launchCampaign(Long businessId, CampaignRequest request) {
         Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
 
         List<String> targetEmails;
         switch (request.getSegment()) {
-            case VIP -> targetEmails = businessService.getVipCustomers(businessId).stream()
+            case VIP -> targetEmails = getVipCustomers(businessId).stream()
                     .map(CustomerSegmentResponse::getEmail)
                     .toList();
-            case AT_RISK -> targetEmails = businessService.getAtRiskCustomers(businessId).stream()
+            case AT_RISK -> targetEmails = getAtRiskCustomers(businessId).stream()
                     .map(CustomerSegmentResponse::getEmail)
                     .toList();
             case ALL -> targetEmails = walletCardRepository.findByBusinessId(businessId).stream()
