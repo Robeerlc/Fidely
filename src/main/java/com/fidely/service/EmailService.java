@@ -43,4 +43,30 @@ public class EmailService {
             System.err.println("Error al enviar el email a " + toEmail + ": " + e.getMessage());
         }
     }
+
+    @Async
+    public void sendMarketingEmail(String toEmail, String brandName, String subject, String body) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+
+            String htmlBody = "<div style='font-family: Arial, sans-serif; padding: 20px;'>"
+                    + "<h2 style='color: #333;'>Novedades de " + brandName + "</h2>"
+                    + "<p style='font-size: 16px; color: #555;'>" + body.replace("\n", "<br>") + "</p>"
+                    + "<hr style='border: 1px solid #eee; margin-top: 30px;'>"
+                    + "<p style='font-size: 12px; color: #999;'>Has recibido este email porque eres cliente de " + brandName + ".</p>"
+                    + "</div>";
+
+            helper.setText(htmlBody, true);
+            mailSender.send(message);
+
+            System.out.println("Campaña enviada a: " + toEmail);
+        } catch (MessagingException e) {
+            System.err.println("Error al enviar campaña a " + toEmail + ": " + e.getMessage());
+        }
+    }
 }

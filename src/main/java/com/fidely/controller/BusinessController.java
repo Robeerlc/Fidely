@@ -1,6 +1,7 @@
 package com.fidely.controller;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.CampaignRequest;
 import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
@@ -83,6 +84,13 @@ public class BusinessController {
     public ResponseEntity<List<CustomerSegmentResponse>> getAtRiskCustomers(@PathVariable Long businessId) {
         validateBusinessOwnership(businessId);
         return ResponseEntity.ok(businessService.getAtRiskCustomers(businessId));
+    }
+
+    @PostMapping("/{businessId}/campaigns")
+    public ResponseEntity<String> launchCampaign(@PathVariable Long businessId, @Valid @RequestBody CampaignRequest request) {
+        validateBusinessOwnership(businessId);
+        businessService.launchCampaign(businessId, request);
+        return ResponseEntity.ok("Campaña iniciada con éxito. Los correos se están enviando en segundo plano.");
     }
 
     private void validateBusinessOwnership(Long businessId) {

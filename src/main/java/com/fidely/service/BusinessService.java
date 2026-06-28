@@ -1,6 +1,7 @@
 package com.fidely.service;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.CampaignRequest;
 import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
@@ -36,6 +37,8 @@ public class BusinessService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
+    private final EmailService emailService;
+    private final BusinessService businessService;
 
     public RegisterResponse login(LoginRequest request) {
         Optional<Business> business = businessRepository.findByEmail(request.email());
@@ -152,5 +155,38 @@ public class BusinessService {
                             .segmentInfo("Última visita hace " + daysSinceLastVisit + " días")
                             .build();
                 }).toList();
+    }
+
+    public void launchCampaign(Long businessId, CampaignRequest request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+
+        List<String> targetEmails;
+        switch (request.getSegment()) {
+            case VIP -> targetEmails = businessService.getVipCustomers(businessId).stream()
+                    .map(CustomerSegmentResponse::getEmail)
+                    .toList();
+            case AT_RISK -> targetEmails = businessService.getAtRiskCustomers(businessId).stream()
+                    .map(CustomerSegmentResponse::getEmail)
+                    .toList();
+            case ALL -> targetEmails = walletCardRepository.findByBusinessId(businessId).stream()
+                    .map(card -> card.getCustomer().getEmail())
+                    .toList();
+            default -> throw new RuntimeException("Segmento no válido.");
+        }
+
+        if (targetEmails.isEmpty())
+            throw new RuntimeException("No hay clientes en este segmento para enviar la campaña.");
+
+        for (String email : targetEmails) {
+            if (email != null && !email.isBlank()) {
+                emailService.sendMarketingEmail(
+                        email,
+                        business.getBrandName() != null ? business.getBrandName() : business.getName(),
+                        request.getSubject(),
+                        request.getMessageBody()
+                );
+            }
+        }
     }
 }
