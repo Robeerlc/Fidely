@@ -55,6 +55,10 @@ public class Business implements User {
     private String instagramUrl;
 
     @Builder.Default
+    @Column(name = "average_ticket_price", nullable = false)
+    private Double averageTicketPrice = 15.0;
+
+    @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
