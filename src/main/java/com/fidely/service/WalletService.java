@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,6 +35,7 @@ public class WalletService {
     private final CustomerService customerService;
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
+    private final SseService sseService;
 
     @Transactional
     public WalletCard createCardForCustomer(CreateCardRequest request) {
@@ -120,6 +122,10 @@ public class WalletService {
         scanLogRepository.save(scanLog);
 
         boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
+
+        sseService.emitEvent(card.getSecureUuid(), "scan-update",
+                Map.of("currentStamps", card.getCurrentStamps(), "isCompleted", isCompleted));
+
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(),
                 isCompleted ? "¡" + amountToAdd + " sello(s) añadido(s)! Tarjeta completada, premio desbloqueado." : "¡" + amountToAdd + " sello(s) añadido(s) correctamente!");
     }
