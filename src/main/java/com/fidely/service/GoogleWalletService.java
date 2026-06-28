@@ -10,10 +10,7 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.walletobjects.Walletobjects;
-import com.google.api.services.walletobjects.model.GenericClass;
-import com.google.api.services.walletobjects.model.GenericObject;
-import com.google.api.services.walletobjects.model.Message;
-import com.google.api.services.walletobjects.model.TextModuleData;
+import com.google.api.services.walletobjects.model.*;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
@@ -165,19 +162,16 @@ public class GoogleWalletService {
                             .setHeader("Cliente:")
                             .setBody(card.getCustomer().getName() != null ? card.getCustomer().getName() : "Cliente VIP")
             ));
+            client.genericobject().update(objectId, existingObject).execute();
 
             Message notificationMessage = new Message()
                     .setHeader("Aviso de " + (card.getBusiness().getBrandName() != null ? card.getBusiness().getBrandName() : card.getBusiness().getName()))
-                    .setBody(pushMessage);
+                    .setBody(pushMessage)
+                    .set("messageType", "textAndNotify");
 
-            List<Message> messages = existingObject.getMessages();
-            if (messages == null) messages = new ArrayList<>();
-            messages.add(notificationMessage);
-            existingObject.setMessages(messages);
-
-            client.genericobject().update(objectId, existingObject).execute();
-            System.out.println("Push enviado con éxito a Google Wallet para la tarjeta: " + objectId);
-
+            AddMessageRequest messageRequest = new AddMessageRequest().setMessage(notificationMessage);
+            client.genericobject().addmessage(objectId, messageRequest).execute();
+            System.out.println("Notificación Push nativa disparada para: " + objectId);
         } catch (Exception e) {
             System.err.println("Aviso: No se pudo enviar el Push nativo a Google Wallet: " + e.getMessage());
         }
