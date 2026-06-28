@@ -12,6 +12,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.services.walletobjects.Walletobjects;
 import com.google.api.services.walletobjects.model.GenericClass;
 import com.google.api.services.walletobjects.model.GenericObject;
+import com.google.api.services.walletobjects.model.Message;
 import com.google.api.services.walletobjects.model.TextModuleData;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -162,13 +163,20 @@ public class GoogleWalletService {
 
                     new TextModuleData()
                             .setHeader("Cliente:")
-                            .setBody(card.getCustomer().getName() != null ? card.getCustomer().getName() : "Cliente VIP"),
-
-                    new TextModuleData()
-                            .setHeader("Aviso Importante 🔔")
-                            .setBody(pushMessage)
+                            .setBody(card.getCustomer().getName() != null ? card.getCustomer().getName() : "Cliente VIP")
             ));
-            client.genericobject().patch(objectId, existingObject).execute();
+
+            Message notificationMessage = new Message()
+                    .setHeader("Aviso de " + (card.getBusiness().getBrandName() != null ? card.getBusiness().getBrandName() : card.getBusiness().getName()))
+                    .setBody(pushMessage);
+
+            List<Message> messages = existingObject.getMessages();
+            if (messages == null) messages = new ArrayList<>();
+            messages.add(notificationMessage);
+            existingObject.setMessages(messages);
+
+            client.genericobject().update(objectId, existingObject).execute();
+            System.out.println("Push enviado con éxito a Google Wallet para la tarjeta: " + objectId);
 
         } catch (Exception e) {
             System.err.println("Aviso: No se pudo enviar el Push nativo a Google Wallet: " + e.getMessage());
