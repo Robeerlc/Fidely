@@ -91,24 +91,18 @@ public class WalletService {
         WalletCard card = walletCardRepository.findBySecureUuid(request.getSecureUuid())
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o UUID inválido."));
 
-        if (!card.getBusiness().getId().equals(request.getBusinessId()))
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Employee employee = employeeRepository.findByEmail(email).orElse(null);
+        Business authBusiness = (employee != null) ? employee.getBusiness() : businessRepository.findByEmail(email).orElseThrow();
+
+        if (!card.getBusiness().getId().equals(authBusiness.getId()))
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
-        if (card.getCurrentStamps() >= card.getMaxStamps()) {
-            return new ScanResponse(
-                    false,
-                    card.getCurrentStamps(),
-                    card.getMaxStamps(),
-                    "¡La tarjeta ya está completa! El cliente debe canjear su premio."
-            );
-        }
+        if (card.getCurrentStamps() >= card.getMaxStamps())
+            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa! El cliente debe canjear su premio.");
 
         card.setCurrentStamps(card.getCurrentStamps() + 1);
         walletCardRepository.save(card);
-
-        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        Employee employee = employeeRepository.findByEmail(email).orElse(null);
-
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.EARN_STAMP)
@@ -118,10 +112,8 @@ public class WalletService {
         scanLogRepository.save(scanLog);
 
         boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
-        String message = isCompleted
-                ? "¡Sello añadido! Tarjeta completada, premio desbloqueado."
-                : "Sello añadido correctamente.";
-        return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(), message);
+        return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(),
+                isCompleted ? "¡Sello añadido! Tarjeta completada, premio desbloqueado." : "Sello añadido correctamente.");
     }
 
     @Transactional
@@ -129,14 +121,15 @@ public class WalletService {
         WalletCard card = walletCardRepository.findBySecureUuid(request.getSecureUuid())
                 .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada o UUID inválido."));
 
-        if (!card.getBusiness().getId().equals(request.getBusinessId()))
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Employee employee = employeeRepository.findByEmail(email).orElse(null);
+        Business authBusiness = (employee != null) ? employee.getBusiness() : businessRepository.findByEmail(email).orElseThrow();
+
+        if (!card.getBusiness().getId().equals(authBusiness.getId()))
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
         if (card.getCurrentStamps() < card.getMaxStamps())
             throw new RuntimeException("El cliente no tiene los sellos necesarios.");
-
-        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        Employee employee = employeeRepository.findByEmail(email).orElse(null);
 
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
