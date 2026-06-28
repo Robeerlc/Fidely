@@ -18,4 +18,6 @@ public interface WalletCardRepository extends JpaRepository<WalletCard, Long> {
     Optional<WalletCard> findByCustomerAndBusiness(Customer customer, Business business);
 
     List<WalletCard> findByBusinessId(Long businessId);
+
+    Optional<WalletCard> findByCustomerEmailAndBusinessId(String email, Long businessId);
 }

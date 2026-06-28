@@ -126,6 +126,13 @@ public class WalletService {
         sseService.emitEvent(card.getSecureUuid(), "scan-update",
                 Map.of("currentStamps", card.getCurrentStamps(), "isCompleted", isCompleted));
 
+        if (card.getCurrentStamps() == card.getMaxStamps() - 1)
+            googleWalletService.updateCardAndTriggerPush(card, "¡Te falta solo 1 sello para tu premio!");
+        else if (isCompleted)
+            googleWalletService.updateCardAndTriggerPush(card, "¡Enhorabuena! Tienes un premio listo para canjear.");
+        else
+            googleWalletService.updateCardAndTriggerPush(card, "Sello añadido. Tienes " + card.getCurrentStamps() + " de " + card.getMaxStamps());
+
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(),
                 isCompleted ? "¡" + amountToAdd + " sello(s) añadido(s)! Tarjeta completada, premio desbloqueado." : "¡" + amountToAdd + " sello(s) añadido(s) correctamente!");
     }

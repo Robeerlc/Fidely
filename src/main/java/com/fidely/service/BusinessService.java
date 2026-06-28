@@ -205,6 +205,10 @@ public class BusinessService {
                         request.getSubject(),
                         request.getMessageBody()
                 );
+                Optional<WalletCard> targetCard = walletCardRepository.findByCustomerEmailAndBusinessId(email, businessId);
+                targetCard.ifPresent(card ->
+                        googleWalletService.updateCardAndTriggerPush(card, request.getSubject())
+                );
             }
         }
     }
