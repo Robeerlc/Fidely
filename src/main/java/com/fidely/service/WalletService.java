@@ -99,13 +99,21 @@ public class WalletService {
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
         if (card.getCurrentStamps() >= card.getMaxStamps())
-            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa! El cliente debe canjear su premio.");
+            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa!");
 
-        card.setCurrentStamps(card.getCurrentStamps() + 1);
+
+        int amountToAdd = request.getAmount() != null && request.getAmount() > 0 ? request.getAmount() : 1;
+        if (card.getCurrentStamps() + amountToAdd > card.getMaxStamps())
+            amountToAdd = card.getMaxStamps() - card.getCurrentStamps();
+
+
+        card.setCurrentStamps(card.getCurrentStamps() + amountToAdd);
         walletCardRepository.save(card);
+
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.EARN_STAMP)
+                .amount(amountToAdd)
                 .employee(employee)
                 .scannedAt(LocalDateTime.now())
                 .build();
@@ -113,7 +121,7 @@ public class WalletService {
 
         boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(),
-                isCompleted ? "¡Sello añadido! Tarjeta completada, premio desbloqueado." : "Sello añadido correctamente.");
+                isCompleted ? "¡" + amountToAdd + " sello(s) añadido(s)! Tarjeta completada, premio desbloqueado." : "¡" + amountToAdd + " sello(s) añadido(s) correctamente!");
     }
 
     @Transactional
