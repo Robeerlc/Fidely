@@ -9,10 +9,7 @@ import com.fidely.dto.response.RegisterResponse;
 import com.fidely.dto.response.statistics.ActivityLogResponse;
 import com.fidely.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
-import com.fidely.entity.Business;
-import com.fidely.entity.Employee;
-import com.fidely.entity.ScanLog;
-import com.fidely.entity.ScanType;
+import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
@@ -188,5 +185,22 @@ public class BusinessService {
                 );
             }
         }
+    }
+
+    @Transactional
+    public void undoScanLog(Long businessId, Long logId) {
+        ScanLog log = scanLogRepository.findById(logId)
+                .orElseThrow(() -> new RuntimeException("Registro no encontrado."));
+
+        if (!log.getWalletCard().getBusiness().getId().equals(businessId))
+            throw new RuntimeException("No tienes permiso para modificar este registro.");
+
+        WalletCard card = log.getWalletCard();
+
+        if (log.getScanType() == ScanType.EARN_STAMP) card.setCurrentStamps(Math.max(0, card.getCurrentStamps() - log.getAmount()));
+        else if (log.getScanType() == ScanType.REDEEM_REWARD) card.setCurrentStamps(card.getMaxStamps());
+
+        walletCardRepository.save(card);
+        scanLogRepository.delete(log);
     }
 }

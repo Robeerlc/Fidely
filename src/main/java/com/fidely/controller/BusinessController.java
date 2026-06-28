@@ -93,6 +93,13 @@ public class BusinessController {
         return ResponseEntity.ok("Campaña iniciada con éxito. Los correos se están enviando en segundo plano.");
     }
 
+    @DeleteMapping("/{businessId}/logs/{logId}")
+    public ResponseEntity<String> undoScan(@PathVariable Long businessId, @PathVariable Long logId) {
+        validateBusinessOwnership(businessId);
+        businessService.undoScanLog(businessId, logId);
+        return ResponseEntity.ok("Acción anulada correctamente. La tarjeta del cliente ha sido actualizada.");
+    }
+
     private void validateBusinessOwnership(Long businessId) {
         String ownerEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         Business business = businessRepository.findByEmail(ownerEmail)
