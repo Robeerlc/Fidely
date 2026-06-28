@@ -11,5 +11,7 @@ public class DashboardResponse {
     private long totalCustomers;
     private long totalStampsGiven;
     private long totalRewardsRedeemed;
+    private Double estimatedRetainedRevenue;
+    private Integer averageDaysBetweenVisits;
     private List<ActivityLogResponse> recentActivity;
 }

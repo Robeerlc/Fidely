@@ -1,6 +1,7 @@
 package com.fidely.controller;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.CampaignRequest;
 import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
@@ -13,12 +14,14 @@ import com.fidely.entity.ScanLog;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.ScanLogRepository;
 import com.fidely.service.BusinessService;
+import com.fidely.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +34,7 @@ public class BusinessController {
     private final BusinessService businessService;
     private final BusinessRepository businessRepository;
     private final ScanLogRepository scanLogRepository;
+    private final FileStorageService fileStorageService;
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerBusiness(@Valid @RequestBody RegisterBusinessRequest request) {
@@ -83,6 +87,27 @@ public class BusinessController {
     public ResponseEntity<List<CustomerSegmentResponse>> getAtRiskCustomers(@PathVariable Long businessId) {
         validateBusinessOwnership(businessId);
         return ResponseEntity.ok(businessService.getAtRiskCustomers(businessId));
+    }
+
+    @PostMapping("/{businessId}/campaigns")
+    public ResponseEntity<String> launchCampaign(@PathVariable Long businessId, @Valid @RequestBody CampaignRequest request) {
+        validateBusinessOwnership(businessId);
+        businessService.launchCampaign(businessId, request);
+        return ResponseEntity.ok("Campaña iniciada con éxito. Los correos se están enviando en segundo plano.");
+    }
+
+    @DeleteMapping("/{businessId}/logs/{logId}")
+    public ResponseEntity<String> undoScan(@PathVariable Long businessId, @PathVariable Long logId) {
+        validateBusinessOwnership(businessId);
+        businessService.undoScanLog(businessId, logId);
+        return ResponseEntity.ok("Acción anulada correctamente. La tarjeta del cliente ha sido actualizada.");
+    }
+
+    @PostMapping("/{businessId}/upload-image")
+    public ResponseEntity<String> uploadImage(@PathVariable Long businessId, @RequestParam("file") MultipartFile file) {
+        validateBusinessOwnership(businessId);
+        String fileUrl = fileStorageService.storeFile(file);
+        return ResponseEntity.ok(fileUrl);
     }
 
     private void validateBusinessOwnership(Long businessId) {

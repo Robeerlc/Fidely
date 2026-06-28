@@ -32,4 +32,8 @@ public class ScanLog {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id")
     private Employee employee;
+
+    @Builder.Default
+    @Column(name = "amount", nullable = false)
+    private Integer amount = 1;
 }

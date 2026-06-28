@@ -7,4 +7,6 @@ import lombok.Data;
 public class ScanRequest {
     @NotBlank(message = "El UUID de la tarjeta es obligatorio")
     private String secureUuid;
+
+    private Integer amount = 1;
 }

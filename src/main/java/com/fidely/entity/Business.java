@@ -56,7 +56,10 @@ public class Business implements User {
 
     @Builder.Default
     @Column(name = "is_subscription_active", nullable = false)
-    private boolean isSubscriptionActive = false; // Por defecto es false hasta que Stripe confirme el pago
+    private boolean isSubscriptionActive = false;
+  
+    @Column(name = "average_ticket_price", nullable = false)
+    private Double averageTicketPrice = 15.0;
 
     @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)

@@ -38,6 +38,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
                         .requestMatchers("/api/v1/wallet/onboarding").permitAll()
                         .requestMatchers("/api/stripe/webhook").permitAll()
+                        .requestMatchers("/api/v1/scan/stream/**").permitAll()
 
                         // Swagger
                         .requestMatchers(

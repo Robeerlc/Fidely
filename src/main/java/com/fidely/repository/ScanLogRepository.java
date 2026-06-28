@@ -44,4 +44,15 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
             "HAVING MAX(l.scannedAt) < :limitDate " +
             "ORDER BY lastVisit ASC")
     List<AtRiskCustomerProjection> findAtRiskCustomers(@Param("businessId") Long businessId, @Param("limitDate") LocalDateTime limitDate);
+
+    interface VisitStatsProjection {
+        LocalDateTime getFirstVisit();
+        LocalDateTime getLastVisit();
+        Long getVisitCount();
+    }
+
+    @Query("SELECT MIN(l.scannedAt) as firstVisit, MAX(l.scannedAt) as lastVisit, COUNT(l) as visitCount " +
+            "FROM ScanLog l WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
+            "GROUP BY l.walletCard.id HAVING COUNT(l) > 1")
+    List<VisitStatsProjection> findVisitStatsByBusiness(@Param("businessId") Long businessId);
 }

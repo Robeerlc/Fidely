@@ -1,6 +1,7 @@
 package com.fidely.service;
 
 import com.fidely.dto.request.BusinessProfileRequest;
+import com.fidely.dto.request.CampaignRequest;
 import com.fidely.dto.request.LoginRequest;
 import com.fidely.dto.request.RegisterBusinessRequest;
 import com.fidely.dto.response.BusinessProfileResponse;
@@ -8,10 +9,7 @@ import com.fidely.dto.response.RegisterResponse;
 import com.fidely.dto.response.statistics.ActivityLogResponse;
 import com.fidely.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.dto.response.statistics.DashboardResponse;
-import com.fidely.entity.Business;
-import com.fidely.entity.Employee;
-import com.fidely.entity.ScanLog;
-import com.fidely.entity.ScanType;
+import com.fidely.entity.*;
 import com.fidely.repository.BusinessRepository;
 import com.fidely.repository.EmployeeRepository;
 import com.fidely.repository.ScanLogRepository;
@@ -21,6 +19,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +35,7 @@ public class BusinessService {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
+    private final EmailService emailService;
 
     public RegisterResponse login(LoginRequest request) {
         Optional<Business> business = businessRepository.findByEmail(request.email());
@@ -93,7 +93,7 @@ public class BusinessService {
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardMetrics(Long businessId) {
-        businessRepository.findById(businessId)
+        Business business = businessRepository.findById(businessId)
                 .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
 
         long totalCustomers = walletCardRepository.countByBusinessId(businessId);
@@ -112,10 +112,31 @@ public class BusinessService {
                             .build();
                 }).toList();
 
+        double ticketMedio = business.getAverageTicketPrice() != null ? business.getAverageTicketPrice() : 15.0;
+        Double ingresosRetenidos = totalStamps * ticketMedio;
+
+        List<ScanLogRepository.VisitStatsProjection> stats = scanLogRepository.findVisitStatsByBusiness(businessId);
+        int averageDays = 0;
+        if (!stats.isEmpty()) {
+            long totalDaysSum = 0;
+            long totalValidCustomers = 0;
+            for (var stat : stats) {
+                long daysBetween = Duration.between(stat.getFirstVisit(), stat.getLastVisit()).toDays();
+                long intervals = stat.getVisitCount() - 1;
+                if (intervals > 0) {
+                    totalDaysSum += (daysBetween / intervals);
+                    totalValidCustomers++;
+                }
+            }
+            averageDays = totalValidCustomers > 0 ? (int) (totalDaysSum / totalValidCustomers) : 0;
+        }
+
         return DashboardResponse.builder()
                 .totalCustomers(totalCustomers)
                 .totalStampsGiven(totalStamps)
                 .totalRewardsRedeemed(totalRewards)
+                .estimatedRetainedRevenue(ingresosRetenidos)
+                .averageDaysBetweenVisits(averageDays)
                 .recentActivity(activities)
                 .build();
     }
@@ -152,5 +173,61 @@ public class BusinessService {
                             .segmentInfo("Última visita hace " + daysSinceLastVisit + " días")
                             .build();
                 }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public void launchCampaign(Long businessId, CampaignRequest request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+
+        List<String> targetEmails;
+        switch (request.getSegment()) {
+            case VIP -> targetEmails = getVipCustomers(businessId).stream()
+                    .map(CustomerSegmentResponse::getEmail)
+                    .toList();
+            case AT_RISK -> targetEmails = getAtRiskCustomers(businessId).stream()
+                    .map(CustomerSegmentResponse::getEmail)
+                    .toList();
+            case ALL -> targetEmails = walletCardRepository.findByBusinessId(businessId).stream()
+                    .map(card -> card.getCustomer().getEmail())
+                    .toList();
+            default -> throw new RuntimeException("Segmento no válido.");
+        }
+
+        if (targetEmails.isEmpty())
+            throw new RuntimeException("No hay clientes en este segmento para enviar la campaña.");
+
+        for (String email : targetEmails) {
+            if (email != null && !email.isBlank()) {
+                emailService.sendMarketingEmail(
+                        email,
+                        business.getBrandName() != null ? business.getBrandName() : business.getName(),
+                        request.getSubject(),
+                        request.getMessageBody()
+                );
+                Optional<WalletCard> targetCard = walletCardRepository.findByCustomerEmailAndBusinessId(email, businessId);
+                targetCard.ifPresent(card ->
+                        googleWalletService.updateCardAndTriggerPush(card, request.getSubject())
+                );
+            }
+        }
+    }
+
+    @Transactional
+    public void undoScanLog(Long businessId, Long logId) {
+        ScanLog log = scanLogRepository.findById(logId)
+                .orElseThrow(() -> new RuntimeException("Registro no encontrado."));
+
+        if (!log.getWalletCard().getBusiness().getId().equals(businessId))
+            throw new RuntimeException("No tienes permiso para modificar este registro.");
+
+        WalletCard card = log.getWalletCard();
+
+        if (log.getScanType() == ScanType.EARN_STAMP)
+            card.setCurrentStamps(Math.max(0, card.getCurrentStamps() - log.getAmount()));
+        else if (log.getScanType() == ScanType.REDEEM_REWARD) card.setCurrentStamps(card.getMaxStamps());
+
+        walletCardRepository.save(card);
+        scanLogRepository.delete(log);
     }
 }

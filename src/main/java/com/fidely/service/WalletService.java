@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,6 +35,7 @@ public class WalletService {
     private final CustomerService customerService;
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
+    private final SseService sseService;
 
     @Transactional
     public WalletCard createCardForCustomer(CreateCardRequest request) {
@@ -99,21 +101,40 @@ public class WalletService {
             throw new RuntimeException("Esta tarjeta no pertenece a tu comercio.");
 
         if (card.getCurrentStamps() >= card.getMaxStamps())
-            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa! El cliente debe canjear su premio.");
+            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa!");
 
-        card.setCurrentStamps(card.getCurrentStamps() + 1);
+
+        int amountToAdd = request.getAmount() != null && request.getAmount() > 0 ? request.getAmount() : 1;
+        if (card.getCurrentStamps() + amountToAdd > card.getMaxStamps())
+            amountToAdd = card.getMaxStamps() - card.getCurrentStamps();
+
+
+        card.setCurrentStamps(card.getCurrentStamps() + amountToAdd);
         walletCardRepository.save(card);
+
         ScanLog scanLog = ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.EARN_STAMP)
+                .amount(amountToAdd)
                 .employee(employee)
                 .scannedAt(LocalDateTime.now())
                 .build();
         scanLogRepository.save(scanLog);
 
         boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
+
+        sseService.emitEvent(card.getSecureUuid(), "scan-update",
+                Map.of("currentStamps", card.getCurrentStamps(), "isCompleted", isCompleted));
+
+        if (card.getCurrentStamps() == card.getMaxStamps() - 1)
+            googleWalletService.updateCardAndTriggerPush(card, "¡Te falta solo 1 sello para tu premio!");
+        else if (isCompleted)
+            googleWalletService.updateCardAndTriggerPush(card, "¡Enhorabuena! Tienes un premio listo para canjear.");
+        else
+            googleWalletService.updateCardAndTriggerPush(card, "Sello añadido. Tienes " + card.getCurrentStamps() + " de " + card.getMaxStamps());
+
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(),
-                isCompleted ? "¡Sello añadido! Tarjeta completada, premio desbloqueado." : "Sello añadido correctamente.");
+                isCompleted ? "¡" + amountToAdd + " sello(s) añadido(s)! Tarjeta completada, premio desbloqueado." : "¡" + amountToAdd + " sello(s) añadido(s) correctamente!");
     }
 
     @Transactional

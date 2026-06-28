@@ -5,11 +5,13 @@ import com.fidely.dto.request.card.ScanRequest;
 import com.fidely.dto.response.card.CardInfoResponse;
 import com.fidely.dto.response.card.RedeemResponse;
 import com.fidely.dto.response.card.ScanResponse;
+import com.fidely.service.SseService;
 import com.fidely.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/v1/scan")
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 public class ScanController {
 
     private final WalletService walletService;
+    private final SseService sseService;
 
     @PostMapping
     public ResponseEntity<ScanResponse> scanCard(@Valid @RequestBody ScanRequest request) {
@@ -35,5 +38,10 @@ public class ScanController {
     public ResponseEntity<CardInfoResponse> getCardInfo(@PathVariable String secureUuid, @RequestParam Long businessId) {
         CardInfoResponse response = walletService.getCardInfo(secureUuid, businessId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/stream/{secureUuid}")
+    public SseEmitter streamUpdates(@PathVariable String secureUuid) {
+        return sseService.subscribe(secureUuid);
     }
 }
