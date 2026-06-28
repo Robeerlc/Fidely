@@ -38,6 +38,9 @@ dependencies {
     // Generador para Apple Wallet (.pkpass)
     // implementation 'de.brendamour:jpasskit:0.4.0'
 
+    //stripe
+    implementation 'com.stripe:stripe-java:33.0.0'
+
     testImplementation 'org.springframework.security:spring-security-test'
     compileOnly 'org.projectlombok:lombok'
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

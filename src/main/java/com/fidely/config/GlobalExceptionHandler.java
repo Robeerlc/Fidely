@@ -1,6 +1,8 @@
 package com.fidely.config;
 
 import com.fidely.dto.response.ErrorResponse;
+import com.fidely.dto.response.stripe.StripeResponse;
+import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -51,5 +53,10 @@ public class GlobalExceptionHandler {
                 .build();
         System.err.println("Error no controlado: " + ex.getMessage());
         return new ResponseEntity<>(error, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(StripeException.class)
+    public ResponseEntity<StripeResponse> handleStripeException(StripeException e) {
+        return ResponseEntity.badRequest().body(new StripeResponse("Error de Stripe: " + e.getMessage(), null));
     }
 }
