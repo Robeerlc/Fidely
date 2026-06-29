@@ -11,9 +11,12 @@ import com.fidely.domain.dto.response.BusinessProfileResponse;
 import com.fidely.domain.dto.response.RegisterResponse;
 import com.fidely.domain.dto.response.VipCustomerResponse;
 import com.fidely.domain.dto.response.statistics.ActivityLogResponse;
-import com.fidely.domain.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.domain.dto.response.statistics.DashboardResponse;
 import com.fidely.domain.entity.*;
+import com.fidely.domain.exception.AccessForbiddenException;
+import com.fidely.domain.exception.DuplicateResourceException;
+import com.fidely.domain.exception.InvalidOperationException;
+import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.EmployeeRepository;
 import com.fidely.dao.repository.ScanLogRepository;
@@ -54,12 +57,14 @@ public class BusinessService {
         if (employee.isPresent() && passwordEncoder.matches(request.password(), employee.get().getPassword()))
             return new RegisterResponse(jwtService.generateToken(employee.get()));
 
-        throw new RuntimeException("Credenciales inválidas");
+        throw new AccessForbiddenException("Credenciales inválidas.");
     }
 
     @Transactional
     public RegisterResponse registerBusiness(RegisterBusinessRequest request) {
-        if (businessRepository.existsByEmail(request.email())) return null;
+        if (businessRepository.existsByEmail(request.email()))
+            throw new DuplicateResourceException("Ya existe un negocio registrado con ese email.");
+
         Business business = Business.builder()
                 .name(request.name())
                 .phoneNumber(request.phoneNumber())
@@ -74,54 +79,49 @@ public class BusinessService {
     @Transactional
     public BusinessProfileResponse updateProfile(Long businessId, BusinessProfileRequest request) {
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
 
-        business.setBrandName(request.getBrandName());
-        business.setThemeColor(request.getThemeColor());
-        business.setLogoUrl(request.getLogoUrl());
-        business.setHeroImageUrl(request.getHeroImageUrl());
-        business.setRewardDescription(request.getRewardDescription());
-        business.setBookingUrl(request.getBookingUrl());
-        business.setInstagramUrl(request.getInstagramUrl());
+        business.setBrandName(request.brandName());
+        business.setThemeColor(request.themeColor());
+        business.setLogoUrl(request.logoUrl());
+        business.setHeroImageUrl(request.heroImageUrl());
+        business.setRewardDescription(request.rewardDescription());
+        business.setBookingUrl(request.bookingUrl());
+        business.setInstagramUrl(request.instagramUrl());
 
-        Business updatedBusiness = businessRepository.save(business);
-        googleWalletService.updateGenericClassForBusiness(updatedBusiness);
+        Business saved = businessRepository.save(business);
+        googleWalletService.updateGenericClassForBusiness(saved);
 
-        return BusinessProfileResponse.builder()
-                .id(updatedBusiness.getId())
-                .brandName(updatedBusiness.getBrandName())
-                .themeColor(updatedBusiness.getThemeColor())
-                .logoUrl(updatedBusiness.getLogoUrl())
-                .heroImageUrl(updatedBusiness.getHeroImageUrl())
-                .rewardDescription(updatedBusiness.getRewardDescription())
-                .bookingUrl(updatedBusiness.getBookingUrl())
-                .instagramUrl(updatedBusiness.getInstagramUrl())
-                .build();
+        return new BusinessProfileResponse(
+                saved.getId(), saved.getBrandName(), saved.getThemeColor(),
+                saved.getLogoUrl(), saved.getHeroImageUrl(), saved.getRewardDescription(),
+                saved.getBookingUrl(), saved.getInstagramUrl()
+        );
     }
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardMetrics(Long businessId) {
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
 
         long totalCustomers = walletCardRepository.countByBusinessId(businessId);
         long totalStamps = scanLogRepository.countByWalletCardBusinessIdAndScanType(businessId, ScanType.EARN_STAMP);
         long totalRewards = scanLogRepository.countByWalletCardBusinessIdAndScanType(businessId, ScanType.REDEEM_REWARD);
-        List<ScanLog> recentLogs = scanLogRepository.findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(businessId);
 
+        LocalDateTime startOfMonth = LocalDateTime.now().withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        long cardsThisMonth = walletCardRepository.countByBusinessIdAndCreatedAtBetween(businessId, startOfMonth, LocalDateTime.now());
+
+        List<ScanLog> recentLogs = scanLogRepository.findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(businessId);
         List<ActivityLogResponse> activities = recentLogs.stream()
-                .map(log -> {
-                    String action = log.getScanType() == ScanType.EARN_STAMP ? "Sello añadido ✂️" : "Premio canjeado 🎁";
-                    return ActivityLogResponse.builder()
-                            .customerName(log.getWalletCard().getCustomer().getName())
-                            .action(action)
-                            .employeeName(log.getEmployee() != null ? log.getEmployee().getName() : "Dueño")
-                            .timestamp(log.getScannedAt())
-                            .build();
-                }).toList();
+                .map(l -> new ActivityLogResponse(
+                        l.getWalletCard().getCustomer().getName(),
+                        l.getScanType() == ScanType.EARN_STAMP ? "Sello añadido" : "Premio canjeado",
+                        l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
+                        l.getScannedAt()
+                )).toList();
 
         double ticketMedio = business.getAverageTicketPrice() != null ? business.getAverageTicketPrice() : 15.0;
-        Double ingresosRetenidos = totalStamps * ticketMedio;
+        double ingresosRetenidos = totalStamps * ticketMedio;
 
         List<ScanLogRepository.VisitStatsProjection> stats = scanLogRepository.findVisitStatsByBusiness(businessId);
         int averageDays = 0;
@@ -139,14 +139,10 @@ public class BusinessService {
             averageDays = totalValidCustomers > 0 ? (int) (totalDaysSum / totalValidCustomers) : 0;
         }
 
-        return DashboardResponse.builder()
-                .totalCustomers(totalCustomers)
-                .totalStampsGiven(totalStamps)
-                .totalRewardsRedeemed(totalRewards)
-                .estimatedRetainedRevenue(ingresosRetenidos)
-                .averageDaysBetweenVisits(averageDays)
-                .recentActivity(activities)
-                .build();
+        return new DashboardResponse(
+                totalCustomers, cardsThisMonth, totalStamps, totalRewards,
+                ingresosRetenidos, averageDays, activities
+        );
     }
 
     @Transactional(readOnly = true)
@@ -160,29 +156,8 @@ public class BusinessService {
                 .toList();
     }
 
-
-
-    @Transactional
-    public void undoScanLog(Long businessId, Long logId) {
-        ScanLog log = scanLogRepository.findById(logId)
-                .orElseThrow(() -> new RuntimeException("Registro no encontrado."));
-
-        if (!log.getWalletCard().getBusiness().getId().equals(businessId))
-            throw new RuntimeException("No tienes permiso para modificar este registro.");
-
-        WalletCard card = log.getWalletCard();
-
-        if (log.getScanType() == ScanType.EARN_STAMP)
-            card.setCurrentStamps(Math.max(0, card.getCurrentStamps() - log.getAmount()));
-        else if (log.getScanType() == ScanType.REDEEM_REWARD) card.setCurrentStamps(card.getMaxStamps());
-
-        walletCardRepository.save(card);
-        scanLogRepository.delete(log);
-    }
-
     public List<AtRiskCustomerResponse> getAtRiskCustomers(Long businessId) {
-        LocalDateTime limitDate = LocalDateTime.now().minusDays(60);
-        return scanLogRepository.findAtRiskCustomers(businessId, limitDate).stream()
+        return scanLogRepository.findAtRiskCustomers(businessId, LocalDateTime.now().minusDays(60)).stream()
                 .map(p -> new AtRiskCustomerResponse(
                         p.getCustomer().getName(),
                         p.getCustomer().getEmail(),
@@ -191,33 +166,50 @@ public class BusinessService {
                 .toList();
     }
 
+    @Transactional
+    public void undoScanLog(Long businessId, Long logId) {
+        ScanLog scanLog = scanLogRepository.findById(logId)
+                .orElseThrow(() -> new ResourceNotFoundException("Registro de escaneo no encontrado."));
+
+        if (!scanLog.getWalletCard().getBusiness().getId().equals(businessId))
+            throw new AccessForbiddenException("No tienes permiso para modificar este registro.");
+
+        WalletCard card = scanLog.getWalletCard();
+
+        if (scanLog.getScanType() == ScanType.EARN_STAMP)
+            card.setCurrentStamps(Math.max(0, card.getCurrentStamps() - scanLog.getAmount()));
+        else if (scanLog.getScanType() == ScanType.REDEEM_REWARD)
+            card.setCurrentStamps(card.getMaxStamps());
+
+        walletCardRepository.save(card);
+        scanLogRepository.delete(scanLog);
+    }
 
     @Transactional(readOnly = true)
     public void sendCampaign(Long businessId, CampaignRequest request) {
         Business business = businessRepository.findById(businessId)
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
         String brandName = business.getBrandName() != null ? business.getBrandName() : business.getName();
 
-        List<Customer> targets = switch (request.getSegment()) {
+        List<Customer> targets = switch (request.segment()) {
             case AT_RISK -> scanLogRepository
                     .findAtRiskCustomers(businessId, LocalDateTime.now().minusDays(60))
-                    .stream().map(p -> p.getCustomer()).toList();
+                    .stream().map(ScanLogRepository.AtRiskCustomerProjection::getCustomer).toList();
             case VIP -> scanLogRepository
                     .findTopVipCustomers(businessId)
-                    .stream().map(p -> p.getCustomer()).toList();
+                    .stream().map(ScanLogRepository.VipCustomerProjection::getCustomer).toList();
             case ALL -> walletCardRepository
                     .findByBusinessId(businessId)
                     .stream().map(WalletCard::getCustomer).toList();
-            default -> throw new RuntimeException("Segmento no válido.");
         };
 
         if (targets.isEmpty())
-            throw new RuntimeException("No hay clientes en este segmento para enviar la campaña.");
+            throw new InvalidOperationException("No hay clientes en este segmento para enviar la campaña.");
 
         targets.forEach(customer -> {
             try {
                 if (customer.getEmail() == null || customer.getEmail().isBlank()) {
-                    log.warn("Cliente {} sin email válido, se omite del envío.", customer.getId());
+                    log.warn("Cliente {} sin email válido, omitido del envío.", customer.getId());
                     return;
                 }
 
@@ -229,8 +221,8 @@ public class BusinessService {
                         customer.getEmail(),
                         customer.getName(),
                         brandName,
-                        request.getMessageBody(),
-                        request.getSubject(),
+                        request.messageBody(),
+                        request.subject(),
                         walletCard != null ? walletCard.getId() : null
                 );
 

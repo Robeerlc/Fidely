@@ -3,6 +3,7 @@ package com.fidely.dao.repository;
 import com.fidely.domain.entity.Customer;
 import com.fidely.domain.entity.ScanLog;
 import com.fidely.domain.entity.ScanType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -32,6 +33,21 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
             "HAVING MAX(l.scannedAt) < :limitDate " +
             "ORDER BY lastVisit ASC")
     List<AtRiskCustomerProjection> findAtRiskCustomers(@Param("businessId") Long businessId, @Param("limitDate") LocalDateTime limitDate);
+
+    @Query("SELECT l.walletCard.customer AS customer, COUNT(l) AS visitCount FROM ScanLog l " +
+            "WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
+            "GROUP BY l.walletCard.customer ORDER BY visitCount DESC")
+    List<VipCustomerProjection> findTopCustomers(@Param("businessId") Long businessId, Pageable pageable);
+
+    @Query("SELECT l.walletCard.customer AS customer, COUNT(l) AS visitCount FROM ScanLog l " +
+            "WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
+            "AND l.scannedAt BETWEEN :from AND :to " +
+            "GROUP BY l.walletCard.customer ORDER BY visitCount DESC")
+    List<VipCustomerProjection> findTopCustomersBetween(
+            @Param("businessId") Long businessId,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to,
+            Pageable pageable);
 
     @Query("SELECT MIN(l.scannedAt) as firstVisit, MAX(l.scannedAt) as lastVisit, COUNT(l) as visitCount " +
             "FROM ScanLog l WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +

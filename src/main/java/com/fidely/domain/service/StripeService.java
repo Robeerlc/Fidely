@@ -74,6 +74,7 @@ public class StripeService {
                         .setPaymentBehavior(
                                 SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE
                         )
+                        .addExpand("latest_invoice")
                         .build()
         );
 

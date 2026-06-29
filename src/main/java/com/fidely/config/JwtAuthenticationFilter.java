@@ -35,7 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String role;
         String path = request.getRequestURI();
 
-        if (path.startsWith("/api/v1/stripe") ||
+        if (path.startsWith("/api/v1/stripe/webhook") ||
 
                 path.startsWith("/api/v1/business/register") ||
 

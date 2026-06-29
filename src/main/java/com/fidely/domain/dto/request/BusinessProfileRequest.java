@@ -1,19 +1,21 @@
 package com.fidely.domain.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
+import jakarta.validation.constraints.Pattern;
 
-@Data
-public class BusinessProfileRequest {
-    @NotBlank(message = "El nombre de la marca es obligatorio")
-    private String brandName;
-    private String themeColor;
-    private String logoUrl;
-    private String heroImageUrl;
+public record BusinessProfileRequest(
+        @NotBlank(message = "El nombre de la marca es obligatorio")
+        String brandName,
 
-    @NotBlank(message = "La descripción de la recompensa es obligatoria")
-    private String rewardDescription;
+        @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "El color debe ser un código hexadecimal válido (#RRGGBB)")
+        String themeColor,
 
-    private String bookingUrl;
-    private String instagramUrl;
-}
+        String logoUrl,
+        String heroImageUrl,
+
+        @NotBlank(message = "La descripción de la recompensa es obligatoria")
+        String rewardDescription,
+
+        String bookingUrl,
+        String instagramUrl
+) {}

@@ -9,10 +9,11 @@ import com.fidely.domain.dto.response.BusinessProfileResponse;
 import com.fidely.domain.dto.response.RegisterResponse;
 import com.fidely.domain.dto.response.VipCustomerResponse;
 import com.fidely.domain.dto.response.statistics.ActivityLogResponse;
-import com.fidely.domain.dto.response.statistics.CustomerSegmentResponse;
 import com.fidely.domain.dto.response.statistics.DashboardResponse;
 import com.fidely.domain.entity.Business;
 import com.fidely.domain.entity.ScanLog;
+import com.fidely.domain.exception.AccessForbiddenException;
+import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.domain.exception.SubscriptionInactiveException;
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.ScanLogRepository;
@@ -41,89 +42,87 @@ public class BusinessController {
 
     @PostMapping("/register")
     public ResponseEntity<RegisterResponse> registerBusiness(@Valid @RequestBody RegisterBusinessRequest request) {
-        RegisterResponse response = businessService.registerBusiness(request);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+        return new ResponseEntity<>(businessService.registerBusiness(request), HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<RegisterResponse> login(@Valid @RequestBody LoginRequest request) {
-        RegisterResponse response = businessService.login(request);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(businessService.login(request));
     }
 
     @PutMapping("/{businessId}/profile")
-    public ResponseEntity<BusinessProfileResponse> updateProfile(@PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
-        validateBusinessOwnership(businessId);
-        BusinessProfileResponse response = businessService.updateProfile(businessId, request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<BusinessProfileResponse> updateProfile(
+            @PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
+        validateOwnership(businessId);
+        return ResponseEntity.ok(businessService.updateProfile(businessId, request));
     }
 
     @GetMapping("/{businessId}/dashboard")
     public ResponseEntity<DashboardResponse> getDashboardMetrics(@PathVariable Long businessId) {
-        validateBusinessOwnership(businessId);
-        DashboardResponse response = businessService.getDashboardMetrics(businessId);
-        return ResponseEntity.ok(response);
+        validateOwnership(businessId);
+        return ResponseEntity.ok(businessService.getDashboardMetrics(businessId));
     }
 
     @GetMapping("/logs")
     public ResponseEntity<List<ActivityLogResponse>> getBusinessLogs() {
         String ownerEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
-        Business business = businessRepository.findByEmail(ownerEmail).orElseThrow();
+        Business business = businessRepository.findByEmail(ownerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
         List<ScanLog> logs = scanLogRepository.findByWalletCard_Business_Id(business.getId());
 
-        List<ActivityLogResponse> response = logs.stream().map(log -> ActivityLogResponse.builder()
-                .customerName(log.getWalletCard().getCustomer().getName())
-                .action(log.getScanType().toString())
-                .employeeName(log.getEmployee() != null ? log.getEmployee().getName() : "Dueño")
-                .timestamp(log.getScannedAt())
-                .build()).toList();
+        List<ActivityLogResponse> response = logs.stream()
+                .map(l -> new ActivityLogResponse(
+                        l.getWalletCard().getCustomer().getName(),
+                        l.getScanType().toString(),
+                        l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
+                        l.getScannedAt()
+                )).toList();
+
         return ResponseEntity.ok(response);
     }
 
-
     @DeleteMapping("/{businessId}/logs/{logId}")
     public ResponseEntity<String> undoScan(@PathVariable Long businessId, @PathVariable Long logId) {
-        validateBusinessOwnership(businessId);
+        validateOwnership(businessId);
         businessService.undoScanLog(businessId, logId);
         return ResponseEntity.ok("Acción anulada correctamente. La tarjeta del cliente ha sido actualizada.");
     }
 
     @PostMapping("/{businessId}/upload-image")
     public ResponseEntity<String> uploadImage(@PathVariable Long businessId, @RequestParam("file") MultipartFile file) {
-        validateBusinessOwnership(businessId);
-        String fileUrl = fileStorageService.storeFile(file);
-        return ResponseEntity.ok(fileUrl);
+        validateOwnership(businessId);
+        return ResponseEntity.ok(fileStorageService.storeFile(file));
     }
 
     @GetMapping("/{businessId}/customers/vip")
     public ResponseEntity<List<VipCustomerResponse>> getVipCustomers(@PathVariable Long businessId) {
-        validateBusinessOwnership(businessId);
+        validateOwnership(businessId);
         return ResponseEntity.ok(businessService.getVipCustomers(businessId));
     }
 
     @GetMapping("/{businessId}/customers/at-risk")
     public ResponseEntity<List<AtRiskCustomerResponse>> getAtRiskCustomers(@PathVariable Long businessId) {
-        validateBusinessOwnership(businessId);
+        validateOwnership(businessId);
         return ResponseEntity.ok(businessService.getAtRiskCustomers(businessId));
     }
 
     @PostMapping("/{businessId}/campaigns")
-    public ResponseEntity<Void> sendCampaign(@PathVariable Long businessId,
-                                             @Valid @RequestBody CampaignRequest request) {
-        validateBusinessOwnership(businessId);
+    public ResponseEntity<Void> sendCampaign(
+            @PathVariable Long businessId, @Valid @RequestBody CampaignRequest request) {
+        validateOwnership(businessId);
         businessService.sendCampaign(businessId, request);
         return ResponseEntity.accepted().build();
     }
 
-    private void validateBusinessOwnership(Long businessId) {
+    private void validateOwnership(Long businessId) {
         String ownerEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         Business business = businessRepository.findByEmail(ownerEmail)
-                .orElseThrow(() -> new RuntimeException("Negocio no encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
 
         if (!business.getId().equals(businessId))
-            throw new RuntimeException("Acceso denegado. No tienes permiso para ver los datos de este negocio.");
+            throw new AccessForbiddenException("No tienes permiso para acceder a los datos de este negocio.");
 
         if (!business.isSubscriptionActive())
-            throw new SubscriptionInactiveException("Tu suscripción está inactiva. Por favor, actualiza tu método de pago para ver tus métricas y campañas.");
+            throw new SubscriptionInactiveException("Tu suscripción está inactiva. Por favor, actualiza tu método de pago.");
     }
 }

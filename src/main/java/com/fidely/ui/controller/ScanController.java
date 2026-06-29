@@ -24,7 +24,7 @@ public class ScanController {
     @PostMapping
     public ResponseEntity<ScanResponse> scanCard(@Valid @RequestBody ScanRequest request) {
         ScanResponse response = walletService.processScan(request);
-        if (response.isSuccess()) return ResponseEntity.ok(response);
+        if (response.success()) return ResponseEntity.ok(response);
         else return ResponseEntity.badRequest().body(response);
     }
 

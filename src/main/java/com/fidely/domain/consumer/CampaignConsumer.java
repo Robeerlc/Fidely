@@ -24,20 +24,18 @@ public class CampaignConsumer {
     public void consume(String message) {
         try {
             CampaignEvent event = objectMapper.readValue(message, CampaignEvent.class);
-            log.info("Procesando campaña para: {}", event.getEmail());
+            log.info("Procesando campaña para: {}", event.email());
 
             emailService.sendMarketingEmail(
-                    event.getEmail(),
-                    event.getBrandName(),
-                    event.getSubject(),
-                    event.getMessage()
+                    event.email(),
+                    event.brandName(),
+                    event.subject(),
+                    event.message()
             );
 
-            if (event.getWalletCardId() != null) {
-                walletCardRepository.findById(event.getWalletCardId())
-                        .ifPresent(card ->
-                                googleWalletService.updateCardAndTriggerPush(card, event.getSubject())
-                        );
+            if (event.walletCardId() != null) {
+                walletCardRepository.findById(event.walletCardId())
+                        .ifPresent(card -> googleWalletService.updateCardAndTriggerPush(card, event.subject()));
             }
         } catch (Exception e) {
             log.error("Error procesando evento de campaña: {}", e.getMessage());

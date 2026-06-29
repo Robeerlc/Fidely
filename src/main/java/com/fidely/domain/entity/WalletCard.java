@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
+
 @Entity
 @Table(name = "wallet_cards")
 @Getter
@@ -44,4 +46,8 @@ public class WalletCard {
 
     @Column(name = "last_scanned_at")
     private LocalDateTime lastScannedAt;
+
+    @Builder.Default
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 }

@@ -1,19 +1,12 @@
 package com.fidely.domain.dto.response;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-
-@Data
-@Builder
-@AllArgsConstructor
-public class BusinessProfileResponse {
-    private Long id;
-    private String brandName;
-    private String themeColor;
-    private String logoUrl;
-    private String heroImageUrl;
-    private String rewardDescription;
-    private String bookingUrl;
-    private String instagramUrl;
-}
+public record BusinessProfileResponse(
+        Long id,
+        String brandName,
+        String themeColor,
+        String logoUrl,
+        String heroImageUrl,
+        String rewardDescription,
+        String bookingUrl,
+        String instagramUrl
+) {}

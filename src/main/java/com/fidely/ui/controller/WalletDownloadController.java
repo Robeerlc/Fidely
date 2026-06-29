@@ -1,6 +1,8 @@
 package com.fidely.ui.controller;
 
 import com.fidely.domain.entity.WalletCard;
+import com.fidely.domain.exception.InvalidOperationException;
+import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.dao.repository.WalletCardRepository;
 import com.fidely.domain.service.GoogleWalletService;
 import lombok.RequiredArgsConstructor;
@@ -23,23 +25,20 @@ public class WalletDownloadController {
             @PathVariable String secureUuid,
             @RequestHeader(value = "User-Agent", defaultValue = "unknown") String userAgent) {
 
-        System.out.println("User-Agent: " + userAgent);
         WalletCard walletCard = walletCardRepository.findBySecureUuid(secureUuid)
-                .orElseThrow(() -> new RuntimeException("Tarjeta no encontrada."));
+                .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada."));
+
         String ua = userAgent.toLowerCase();
 
-        if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("mac")) return downloadForApple(walletCard);
-        else if (ua.contains("android")) return downloadForGoogle(walletCard);
-        else throw new RuntimeException("Por favor, abre este enlace desde tu teléfono móvil.");
-    }
+        if (ua.contains("android"))
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(URI.create(googleWalletService.generateGoogleWalletLink(walletCard)))
+                    .build();
 
-    private ResponseEntity<?> downloadForGoogle(WalletCard walletCard) {
-        String googleLink = googleWalletService.generateGoogleWalletLink(walletCard);
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(googleLink)).build();
-    }
+        if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("mac"))
+            // Apple Wallet (.pkpass) pendiente de implementar con certificados Apple Developer
+            return ResponseEntity.ok("Soporte de Apple Wallet próximamente. UUID: " + walletCard.getSecureUuid());
 
-    private ResponseEntity<?> downloadForApple(WalletCard walletCard) {
-        // TODO: jPasskit lógica
-        return ResponseEntity.ok("Aquí irá el archivo .pkpass de Apple para el UUID: " + walletCard.getSecureUuid());
+        throw new InvalidOperationException("Por favor, abre este enlace desde tu teléfono móvil.");
     }
 }
