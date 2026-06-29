@@ -2,16 +2,12 @@ package com.fidely.ui.controller;
 
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.domain.dto.request.OnboardingRequest;
-import com.fidely.domain.dto.request.card.CreateCardRequest;
 import com.fidely.domain.dto.response.OnboardingResponse;
-import com.fidely.domain.dto.response.card.CardResponse;
 import com.fidely.domain.entity.Business;
-import com.fidely.domain.entity.WalletCard;
 import com.fidely.domain.service.GoogleWalletService;
 import com.fidely.domain.service.WalletService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,19 +19,6 @@ public class WalletController {
     private final WalletService walletService;
     private final BusinessRepository businessRepository;
     private final GoogleWalletService googleWalletService;
-
-    @PostMapping("/create")
-    public ResponseEntity<CardResponse> createCard(@Valid @RequestBody CreateCardRequest request) {
-        WalletCard card = walletService.createCardForCustomer(request);
-        CardResponse response = new CardResponse(
-                card.getId(),
-                card.getSecureUuid(),
-                card.getCurrentStamps(),
-                card.getMaxStamps(),
-                "Tarjeta digital creada correctamente"
-        );
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
 
     @PostMapping("/onboarding")
     public ResponseEntity<OnboardingResponse> silentOnboarding(@Valid @RequestBody OnboardingRequest request) {

@@ -5,7 +5,6 @@ import com.fidely.dao.repository.EmployeeRepository;
 import com.fidely.dao.repository.ScanLogRepository;
 import com.fidely.dao.repository.WalletCardRepository;
 import com.fidely.domain.dto.request.OnboardingRequest;
-import com.fidely.domain.dto.request.card.CreateCardRequest;
 import com.fidely.domain.dto.request.card.RedeemRequest;
 import com.fidely.domain.dto.request.card.ScanRequest;
 import com.fidely.domain.dto.response.OnboardingResponse;
@@ -25,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -39,26 +37,6 @@ public class WalletService {
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
     private final SseService sseService;
-
-    @Transactional
-    public WalletCard createCardForCustomer(CreateCardRequest request) {
-        Business business = businessRepository.findById(request.businessId())
-                .orElseThrow(() -> new ResourceNotFoundException("El negocio no existe."));
-
-        Customer customer = customerService.getOrCreateCustomer(
-                request.customerName(), request.customerPhone(), request.customerEmail()
-        );
-
-        Optional<WalletCard> existingCard = walletCardRepository.findByCustomerAndBusiness(customer, business);
-        if (existingCard.isPresent()) return existingCard.get();
-
-        WalletCard newCard = WalletCard.builder()
-                .customer(customer)
-                .business(business)
-                .maxStamps(business.getDefaultMaxStamps())
-                .build();
-        return walletCardRepository.save(newCard);
-    }
 
     @Transactional
     public OnboardingResponse silentOnboarding(OnboardingRequest request) {
@@ -77,7 +55,6 @@ public class WalletService {
                                 .maxStamps(business.getDefaultMaxStamps())
                                 .build()
                 ));
-
         String walletUrl = googleWalletService.generateGoogleWalletLink(card);
 
         emailService.sendWelcomeAndCardEmail(
@@ -86,7 +63,6 @@ public class WalletService {
                 business.getBrandName() != null ? business.getBrandName() : business.getName(),
                 walletUrl
         );
-
         return new OnboardingResponse(walletUrl, "¡Tarjeta generada con éxito!");
     }
 
