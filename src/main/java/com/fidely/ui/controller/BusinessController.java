@@ -1,10 +1,12 @@
 package com.fidely.ui.controller;
 
+import com.fidely.domain.dto.request.BusinessConfigRequest;
 import com.fidely.domain.dto.request.BusinessProfileRequest;
 import com.fidely.domain.dto.request.CampaignRequest;
 import com.fidely.domain.dto.request.LoginRequest;
 import com.fidely.domain.dto.request.RegisterBusinessRequest;
 import com.fidely.domain.dto.response.AtRiskCustomerResponse;
+import com.fidely.domain.dto.response.BusinessConfigResponse;
 import com.fidely.domain.dto.response.BusinessProfileResponse;
 import com.fidely.domain.dto.response.RegisterResponse;
 import com.fidely.domain.dto.response.VipCustomerResponse;
@@ -50,11 +52,24 @@ public class BusinessController {
         return ResponseEntity.ok(businessService.login(request));
     }
 
+    @GetMapping("/verify")
+    public ResponseEntity<String> verifyEmail(@RequestParam String token) {
+        businessService.verifyEmail(token);
+        return ResponseEntity.ok("Email verificado correctamente. Ya puedes usar tu cuenta.");
+    }
+
     @PutMapping("/{businessId}/profile")
     public ResponseEntity<BusinessProfileResponse> updateProfile(
             @PathVariable Long businessId, @Valid @RequestBody BusinessProfileRequest request) {
         validateOwnership(businessId);
         return ResponseEntity.ok(businessService.updateProfile(businessId, request));
+    }
+
+    @PatchMapping("/{businessId}/config")
+    public ResponseEntity<BusinessConfigResponse> updateConfig(
+            @PathVariable Long businessId, @Valid @RequestBody BusinessConfigRequest request) {
+        validateOwnership(businessId);
+        return ResponseEntity.ok(businessService.updateConfig(businessId, request));
     }
 
     @GetMapping("/{businessId}/dashboard")
@@ -70,22 +85,27 @@ public class BusinessController {
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
         List<ScanLog> logs = scanLogRepository.findByWalletCard_Business_Id(business.getId());
 
-        List<ActivityLogResponse> response = logs.stream()
+        return ResponseEntity.ok(logs.stream()
                 .map(l -> new ActivityLogResponse(
                         l.getWalletCard().getCustomer().getName(),
                         l.getScanType().toString(),
                         l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
                         l.getScannedAt()
-                )).toList();
-
-        return ResponseEntity.ok(response);
+                )).toList());
     }
 
     @DeleteMapping("/{businessId}/logs/{logId}")
     public ResponseEntity<String> undoScan(@PathVariable Long businessId, @PathVariable Long logId) {
         validateOwnership(businessId);
         businessService.undoScanLog(businessId, logId);
-        return ResponseEntity.ok("Acción anulada correctamente. La tarjeta del cliente ha sido actualizada.");
+        return ResponseEntity.ok("Acción anulada correctamente.");
+    }
+
+    @PatchMapping("/{businessId}/cards/{secureUuid}/toggle")
+    public ResponseEntity<String> toggleCard(@PathVariable Long businessId, @PathVariable String secureUuid) {
+        validateOwnership(businessId);
+        businessService.toggleCard(businessId, secureUuid);
+        return ResponseEntity.ok("Estado de la tarjeta actualizado.");
     }
 
     @PostMapping("/{businessId}/upload-image")

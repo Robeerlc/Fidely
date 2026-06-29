@@ -25,19 +25,23 @@ public class WalletDownloadController {
             @PathVariable String secureUuid,
             @RequestHeader(value = "User-Agent", defaultValue = "unknown") String userAgent) {
 
-        WalletCard walletCard = walletCardRepository.findBySecureUuid(secureUuid)
+        WalletCard card = walletCardRepository.findBySecureUuid(secureUuid)
                 .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada."));
+
+        if (!card.getIsActive())
+            throw new InvalidOperationException("Esta tarjeta ha sido desactivada.");
 
         String ua = userAgent.toLowerCase();
 
         if (ua.contains("android"))
             return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(URI.create(googleWalletService.generateGoogleWalletLink(walletCard)))
+                    .location(URI.create(googleWalletService.generateGoogleWalletLink(card)))
                     .build();
 
-        if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("mac"))
-            // Apple Wallet (.pkpass) pendiente de implementar con certificados Apple Developer
-            return ResponseEntity.ok("Soporte de Apple Wallet próximamente. UUID: " + walletCard.getSecureUuid());
+        if (ua.contains("iphone") || ua.contains("ipad") || ua.contains("coredata"))
+            // Apple Wallet (.pkpass) pendiente — requiere certificados Apple Developer
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body("Apple Wallet estará disponible próximamente.");
 
         throw new InvalidOperationException("Por favor, abre este enlace desde tu teléfono móvil.");
     }

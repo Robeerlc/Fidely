@@ -55,6 +55,7 @@ public class WalletService {
         WalletCard newCard = WalletCard.builder()
                 .customer(customer)
                 .business(business)
+                .maxStamps(business.getDefaultMaxStamps())
                 .build();
         return walletCardRepository.save(newCard);
     }
@@ -70,7 +71,11 @@ public class WalletService {
 
         WalletCard card = walletCardRepository.findByCustomerAndBusiness(customer, business)
                 .orElseGet(() -> walletCardRepository.save(
-                        WalletCard.builder().customer(customer).business(business).build()
+                        WalletCard.builder()
+                                .customer(customer)
+                                .business(business)
+                                .maxStamps(business.getDefaultMaxStamps())
+                                .build()
                 ));
 
         String walletUrl = googleWalletService.generateGoogleWalletLink(card);
@@ -101,6 +106,9 @@ public class WalletService {
 
         if (!card.getBusiness().getId().equals(authBusiness.getId()))
             throw new AccessForbiddenException("Esta tarjeta no pertenece a tu comercio.");
+
+        if (!card.getIsActive())
+            throw new InvalidOperationException("Esta tarjeta ha sido desactivada por el negocio.");
 
         if (card.getCurrentStamps() >= card.getMaxStamps())
             return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa!");
@@ -155,6 +163,9 @@ public class WalletService {
 
         if (!card.getBusiness().getId().equals(authBusiness.getId()))
             throw new AccessForbiddenException("Esta tarjeta no pertenece a tu comercio.");
+
+        if (!card.getIsActive())
+            throw new InvalidOperationException("Esta tarjeta ha sido desactivada por el negocio.");
 
         if (card.getCurrentStamps() < card.getMaxStamps())
             throw new InvalidOperationException("El cliente no tiene los sellos necesarios para canjear el premio.");

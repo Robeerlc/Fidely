@@ -1,6 +1,5 @@
 package com.fidely.ui.controller;
 
-import com.fidely.domain.dto.request.stripe.CancelSubscriptionRequest;
 import com.fidely.domain.dto.request.stripe.CreateClienteRequest;
 import com.fidely.domain.dto.request.stripe.SubscribeRequest;
 import com.fidely.domain.dto.response.stripe.StripeResponse;
@@ -9,6 +8,7 @@ import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -36,15 +36,14 @@ public class StripeController {
     @PostMapping("/webhook")
     public ResponseEntity<String> webhook(
             @RequestBody String payload,
-            @RequestHeader("Stripe-Signature") String signature
-    ) throws StripeException {
+            @RequestHeader("Stripe-Signature") String signature) throws StripeException {
         stripeService.processWebhook(payload, signature, webhookSecret);
         return ResponseEntity.ok("ok");
     }
 
     @DeleteMapping("/subscription")
-    public ResponseEntity<StripeResponse> cancel(@RequestBody CancelSubscriptionRequest req) throws StripeException {
-        stripeService.cancel(req.subscriptionId());
+    public ResponseEntity<StripeResponse> cancel(Authentication auth) throws StripeException {
+        stripeService.cancelForBusiness(auth.getName());
         return ResponseEntity.ok(new StripeResponse("Suscripción cancelada correctamente", null));
     }
 }

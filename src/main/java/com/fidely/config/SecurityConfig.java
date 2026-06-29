@@ -40,7 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/stripe/webhook").permitAll()
                         .requestMatchers("/api/v1/stripe/**").hasRole("BUSINESS")
                         .requestMatchers("/api/v1/scan/stream/**").permitAll()
-                        .requestMatchers("/api/v1/customer/onboarding").permitAll()
+                        .requestMatchers("/api/v1/business/verify").permitAll()
 
                         // Swagger
                         .requestMatchers(

@@ -36,13 +36,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         if (path.startsWith("/api/v1/stripe/webhook") ||
-
                 path.startsWith("/api/v1/business/register") ||
-
                 path.startsWith("/api/v1/business/login") ||
-
-                path.startsWith("/api/v1/customer/onboarding") ||
-
+                path.startsWith("/api/v1/business/verify") ||
                 path.startsWith("/api/v1/wallet/onboarding")) {
 
             filterChain.doFilter(request, response);

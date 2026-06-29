@@ -2,11 +2,13 @@ package com.fidely.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidely.domain.dto.CampaignEvent;
+import com.fidely.domain.dto.request.BusinessConfigRequest;
 import com.fidely.domain.dto.request.BusinessProfileRequest;
 import com.fidely.domain.dto.request.CampaignRequest;
 import com.fidely.domain.dto.request.LoginRequest;
 import com.fidely.domain.dto.request.RegisterBusinessRequest;
 import com.fidely.domain.dto.response.AtRiskCustomerResponse;
+import com.fidely.domain.dto.response.BusinessConfigResponse;
 import com.fidely.domain.dto.response.BusinessProfileResponse;
 import com.fidely.domain.dto.response.RegisterResponse;
 import com.fidely.domain.dto.response.VipCustomerResponse;
@@ -23,6 +25,7 @@ import com.fidely.dao.repository.ScanLogRepository;
 import com.fidely.dao.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -47,6 +50,10 @@ public class BusinessService {
     private final EmployeeRepository employeeRepository;
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
+    private final EmailService emailService;
+
+    @Value("${fidely.app.base-url}")
+    private String baseUrl;
 
     public RegisterResponse login(LoginRequest request) {
         Optional<Business> business = businessRepository.findByEmail(request.email());
@@ -73,7 +80,30 @@ public class BusinessService {
                 .password(passwordEncoder.encode(request.password()))
                 .build();
         businessRepository.save(business);
+
+        String verificationToken = jwtService.generateEmailToken(business);
+        emailService.sendVerificationEmail(business.getEmail(), business.getName(),
+                baseUrl + "/api/v1/business/verify?token=" + verificationToken);
+
         return new RegisterResponse(jwtService.generateToken(business));
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        String email = jwtService.getSubject(token);
+        String type = jwtService.getType(token);
+
+        if (!"EMAIL_VERIFICATION".equals(type))
+            throw new AccessForbiddenException("Token de verificación inválido.");
+
+        Business business = businessRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
+
+        if (business.isEmailVerified())
+            throw new InvalidOperationException("El email ya ha sido verificado.");
+
+        business.setEmailVerified(true);
+        businessRepository.save(business);
     }
 
     @Transactional
@@ -97,6 +127,20 @@ public class BusinessService {
                 saved.getLogoUrl(), saved.getHeroImageUrl(), saved.getRewardDescription(),
                 saved.getBookingUrl(), saved.getInstagramUrl()
         );
+    }
+
+    @Transactional
+    public BusinessConfigResponse updateConfig(Long businessId, BusinessConfigRequest request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
+
+        if (request.defaultMaxStamps() != null)
+            business.setDefaultMaxStamps(request.defaultMaxStamps());
+        if (request.averageTicketPrice() != null)
+            business.setAverageTicketPrice(request.averageTicketPrice());
+
+        businessRepository.save(business);
+        return new BusinessConfigResponse(business.getDefaultMaxStamps(), business.getAverageTicketPrice());
     }
 
     @Transactional(readOnly = true)
@@ -148,21 +192,13 @@ public class BusinessService {
     @Transactional(readOnly = true)
     public List<VipCustomerResponse> getVipCustomers(Long businessId) {
         return scanLogRepository.findTopVipCustomers(businessId).stream()
-                .map(p -> new VipCustomerResponse(
-                        p.getCustomer().getName(),
-                        p.getCustomer().getEmail(),
-                        p.getVisitCount()
-                ))
+                .map(p -> new VipCustomerResponse(p.getCustomer().getName(), p.getCustomer().getEmail(), p.getVisitCount()))
                 .toList();
     }
 
     public List<AtRiskCustomerResponse> getAtRiskCustomers(Long businessId) {
         return scanLogRepository.findAtRiskCustomers(businessId, LocalDateTime.now().minusDays(60)).stream()
-                .map(p -> new AtRiskCustomerResponse(
-                        p.getCustomer().getName(),
-                        p.getCustomer().getEmail(),
-                        p.getLastVisit()
-                ))
+                .map(p -> new AtRiskCustomerResponse(p.getCustomer().getName(), p.getCustomer().getEmail(), p.getLastVisit()))
                 .toList();
     }
 
@@ -175,7 +211,6 @@ public class BusinessService {
             throw new AccessForbiddenException("No tienes permiso para modificar este registro.");
 
         WalletCard card = scanLog.getWalletCard();
-
         if (scanLog.getScanType() == ScanType.EARN_STAMP)
             card.setCurrentStamps(Math.max(0, card.getCurrentStamps() - scanLog.getAmount()));
         else if (scanLog.getScanType() == ScanType.REDEEM_REWARD)
@@ -183,6 +218,18 @@ public class BusinessService {
 
         walletCardRepository.save(card);
         scanLogRepository.delete(scanLog);
+    }
+
+    @Transactional
+    public void toggleCard(Long businessId, String secureUuid) {
+        WalletCard card = walletCardRepository.findBySecureUuid(secureUuid)
+                .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada."));
+
+        if (!card.getBusiness().getId().equals(businessId))
+            throw new AccessForbiddenException("Esta tarjeta no pertenece a tu negocio.");
+
+        card.setIsActive(!card.getIsActive());
+        walletCardRepository.save(card);
     }
 
     @Transactional(readOnly = true)
@@ -212,20 +259,14 @@ public class BusinessService {
                     log.warn("Cliente {} sin email válido, omitido del envío.", customer.getId());
                     return;
                 }
-
                 WalletCard walletCard = walletCardRepository
-                        .findByCustomerEmailAndBusinessId(customer.getEmail(), businessId)
-                        .orElse(null);
+                        .findByCustomerEmailAndBusinessId(customer.getEmail(), businessId).orElse(null);
 
                 CampaignEvent event = new CampaignEvent(
-                        customer.getEmail(),
-                        customer.getName(),
-                        brandName,
-                        request.messageBody(),
-                        request.subject(),
+                        customer.getEmail(), customer.getName(), brandName,
+                        request.messageBody(), request.subject(),
                         walletCard != null ? walletCard.getId() : null
                 );
-
                 kafkaTemplate.send("campaign-notifications", objectMapper.writeValueAsString(event));
             } catch (Exception e) {
                 log.error("Error serializando evento para {}: {}", customer.getEmail(), e.getMessage());

@@ -33,6 +33,9 @@ public class Business implements User {
     @Column(name = "stripe_customer_id")
     private String stripeCustomerId;
 
+    @Column(name = "stripe_subscription_id")
+    private String stripeSubscriptionId;
+
     @Column(name = "brand_name")
     private String brandName;
 
@@ -57,6 +60,14 @@ public class Business implements User {
     @Builder.Default
     @Column(name = "is_subscription_active", nullable = false)
     private boolean isSubscriptionActive = false;
+
+    @Builder.Default
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = false;
+
+    @Builder.Default
+    @Column(name = "default_max_stamps", nullable = false)
+    private Integer defaultMaxStamps = 10;
 
     @Builder.Default
     @Column(name = "average_ticket_price", nullable = false)
