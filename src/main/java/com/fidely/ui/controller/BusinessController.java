@@ -15,6 +15,10 @@ import com.fidely.domain.service.BusinessService;
 import com.fidely.domain.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -71,19 +75,22 @@ public class BusinessController {
     }
 
     @GetMapping("/logs")
-    public ResponseEntity<List<ActivityLogResponse>> getBusinessLogs() {
+    public ResponseEntity<Page<ActivityLogResponse>> getBusinessLogs(
+            @PageableDefault(sort = "scannedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+
         String ownerEmail = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         Business business = businessRepository.findByEmail(ownerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
-        List<ScanLog> logs = scanLogRepository.findByWalletCard_Business_Id(business.getId());
 
-        return ResponseEntity.ok(logs.stream()
-                .map(l -> new ActivityLogResponse(
-                        l.getWalletCard().getCustomer().getName(),
-                        l.getScanType().toString(),
-                        l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
-                        l.getScannedAt()
-                )).toList());
+        Page<ScanLog> logsPage = scanLogRepository.findByWalletCard_Business_Id(business.getId(), pageable);
+        Page<ActivityLogResponse> responsePage = logsPage.map(l -> new ActivityLogResponse(
+                l.getWalletCard().getCustomer().getName(),
+                l.getScanType().toString(),
+                l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
+                l.getScannedAt()
+        ));
+
+        return ResponseEntity.ok(responsePage);
     }
 
     @DeleteMapping("/{businessId}/logs/{logId}")

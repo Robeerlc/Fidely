@@ -43,6 +43,10 @@ public class WalletCard {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Builder.Default
+    @Column(name = "google_reviewed", nullable = false)
+    private boolean googleReviewed = false;
+
     @Column(name = "last_scanned_at")
     private LocalDateTime lastScannedAt;
 

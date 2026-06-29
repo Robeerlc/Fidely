@@ -4,6 +4,7 @@ import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.EmployeeRepository;
 import com.fidely.dao.repository.ScanLogRepository;
 import com.fidely.dao.repository.WalletCardRepository;
+import com.fidely.domain.dto.ScanUpdateEvent;
 import com.fidely.domain.dto.request.OnboardingRequest;
 import com.fidely.domain.dto.request.card.RedeemRequest;
 import com.fidely.domain.dto.request.card.ScanRequest;
@@ -17,9 +18,12 @@ import com.fidely.domain.exception.InvalidOperationException;
 import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.domain.exception.SubscriptionInactiveException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.Map;
@@ -27,6 +31,7 @@ import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WalletService {
 
     private final BusinessRepository businessRepository;
@@ -37,6 +42,8 @@ public class WalletService {
     private final EmailService emailService;
     private final EmployeeRepository employeeRepository;
     private final SseService sseService;
+    private final KafkaTemplate<Object, String> kafkaTemplate;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public OnboardingResponse silentOnboarding(OnboardingRequest request) {
@@ -89,7 +96,8 @@ public class WalletService {
         if (card.getCurrentStamps() >= card.getMaxStamps())
             return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(), "¡La tarjeta ya está completa!");
 
-        int amountToAdd = request.amount() != null && request.amount() > 0 ? request.amount() : 1;
+        int baseAmount = request.amount() != null && request.amount() > 0 ? request.amount() : 1;
+        int amountToAdd = baseAmount * authBusiness.getCurrentMultiplier();
         if (card.getCurrentStamps() + amountToAdd > card.getMaxStamps())
             amountToAdd = card.getMaxStamps() - card.getCurrentStamps();
 
@@ -118,7 +126,12 @@ public class WalletService {
         else
             pushMessage = "Sello añadido. Tienes " + card.getCurrentStamps() + " de " + card.getMaxStamps();
 
-        googleWalletService.updateCardAndTriggerPush(card, pushMessage);
+        try {
+            ScanUpdateEvent event = new ScanUpdateEvent(card.getId(), pushMessage);
+            kafkaTemplate.send("scan-updates", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Error encolando actualización de escaneo: {}", e.getMessage());
+        }
 
         String msg = isCompleted
                 ? "¡" + amountToAdd + " sello(s) añadido(s)! Tarjeta completada, premio desbloqueado."

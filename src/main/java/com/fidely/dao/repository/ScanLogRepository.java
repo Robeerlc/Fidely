@@ -3,6 +3,7 @@ package com.fidely.dao.repository;
 import com.fidely.domain.entity.Customer;
 import com.fidely.domain.entity.ScanLog;
 import com.fidely.domain.entity.ScanType;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -19,7 +20,7 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
 
     List<ScanLog> findTop10ByWalletCardBusinessIdOrderByScannedAtDesc(Long businessId);
 
-    List<ScanLog> findByWalletCard_Business_Id(Long walletCardBusinessId);
+    Page<ScanLog> findByWalletCard_Business_Id(Long businessId, Pageable pageable);
 
     @Query("SELECT l.walletCard.customer AS customer, COUNT(l) AS visitCount FROM ScanLog l " +
             "WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +

@@ -88,6 +88,10 @@ public class Business implements User {
     private List<Promotion> promotions;
 
     @Builder.Default
+    @Column(name = "current_multiplier", nullable = false)
+    private Integer currentMultiplier = 1;
+
+    @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
