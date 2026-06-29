@@ -1,7 +1,7 @@
 package com.fidely.domain.service;
 
-import com.fidely.domain.entity.Customer;
 import com.fidely.dao.repository.CustomerRepository;
+import com.fidely.domain.entity.Customer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

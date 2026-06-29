@@ -14,4 +14,5 @@ public record PromotionResponse(
         boolean active,
         boolean currentlyRunning,
         LocalDateTime createdAt
-) {}
+) {
+}

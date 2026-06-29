@@ -8,7 +8,6 @@ import com.fidely.domain.dto.response.promotion.PromotionRankingResponse;
 import com.fidely.domain.dto.response.promotion.PromotionResponse;
 import com.fidely.domain.dto.response.promotion.RankingEntryResponse;
 import com.fidely.domain.entity.Promotion;
-import com.fidely.domain.exception.AccessForbiddenException;
 import com.fidely.domain.exception.InvalidOperationException;
 import com.fidely.domain.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -72,13 +71,11 @@ public class PromotionService {
     public PromotionRankingResponse getRanking(Long businessId, Long promotionId) {
         Promotion promotion = promotionRepository.findByIdAndBusinessId(promotionId, businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Promoción no encontrada."));
-
         var pageable = PageRequest.of(0, promotion.getTopN());
 
         List<ScanLogRepository.VipCustomerProjection> ranked;
-        if (promotion.isPermanent()) {
-            ranked = scanLogRepository.findTopCustomers(businessId, pageable);
-        } else {
+        if (promotion.isPermanent()) ranked = scanLogRepository.findTopCustomers(businessId, pageable);
+        else {
             LocalDateTime from = promotion.getStartDate().atStartOfDay();
             LocalDateTime to = promotion.getEndDate().atTime(23, 59, 59);
             ranked = scanLogRepository.findTopCustomersBetween(businessId, from, to, pageable);

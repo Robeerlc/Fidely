@@ -18,4 +18,5 @@ public record BusinessProfileRequest(
 
         String bookingUrl,
         String instagramUrl
-) {}
+) {
+}

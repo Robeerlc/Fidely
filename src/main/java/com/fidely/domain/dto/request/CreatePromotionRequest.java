@@ -24,4 +24,5 @@ public record CreatePromotionRequest(
         LocalDate startDate,
 
         LocalDate endDate
-) {}
+) {
+}

@@ -6,12 +6,15 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "scan_logs")
+@Table(name = "scan_logs", indexes = {
+        @Index(name = "idx_scan_business_date", columnList = "wallet_card_id, scanned_at")
+})
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
 public class ScanLog {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

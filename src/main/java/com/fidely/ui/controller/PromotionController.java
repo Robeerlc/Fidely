@@ -1,5 +1,6 @@
 package com.fidely.ui.controller;
 
+import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.domain.dto.request.CreatePromotionRequest;
 import com.fidely.domain.dto.response.promotion.PromotionRankingResponse;
 import com.fidely.domain.dto.response.promotion.PromotionResponse;
@@ -7,7 +8,6 @@ import com.fidely.domain.entity.Business;
 import com.fidely.domain.exception.AccessForbiddenException;
 import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.domain.exception.SubscriptionInactiveException;
-import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.domain.service.PromotionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

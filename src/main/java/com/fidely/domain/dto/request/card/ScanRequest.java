@@ -7,4 +7,5 @@ public record ScanRequest(
         String secureUuid,
 
         Integer amount
-) {}
+) {
+}

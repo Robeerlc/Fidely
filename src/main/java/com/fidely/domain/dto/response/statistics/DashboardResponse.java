@@ -10,4 +10,5 @@ public record DashboardResponse(
         Double estimatedRetainedRevenue,
         Integer averageDaysBetweenVisits,
         List<ActivityLogResponse> recentActivity
-) {}
+) {
+}

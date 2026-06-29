@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidOperationException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOperation(InvalidOperationException ex) {
-        return build(HttpStatus.UNPROCESSABLE_ENTITY, "Invalid Operation", ex.getMessage());
+        return build(HttpStatus.UNPROCESSABLE_CONTENT, "Invalid Operation", ex.getMessage());
     }
 
     @ExceptionHandler(SubscriptionInactiveException.class)

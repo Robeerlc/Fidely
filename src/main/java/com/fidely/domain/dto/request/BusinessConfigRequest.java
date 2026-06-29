@@ -11,4 +11,5 @@ public record BusinessConfigRequest(
 
         @DecimalMin(value = "0.01", message = "El ticket medio debe ser mayor que 0")
         Double averageTicketPrice
-) {}
+) {
+}

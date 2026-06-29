@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "businesses")
@@ -72,6 +73,14 @@ public class Business implements User {
     @Builder.Default
     @Column(name = "average_ticket_price", nullable = false)
     private Double averageTicketPrice = 15.0;
+
+    // Si borro la peluquería, borra también a sus empleados
+    @OneToMany(mappedBy = "business", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Employee> employees;
+
+    // Si borro la peluquería, borra también sus promociones
+    @OneToMany(mappedBy = "business", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<Promotion> promotions;
 
     @Builder.Default
     @Column(nullable = false, name = "created_at", updatable = false)

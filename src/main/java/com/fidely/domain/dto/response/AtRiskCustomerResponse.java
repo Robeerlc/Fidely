@@ -6,4 +6,5 @@ public record AtRiskCustomerResponse(
         String name,
         String email,
         LocalDateTime lastVisit
-) {}
+) {
+}

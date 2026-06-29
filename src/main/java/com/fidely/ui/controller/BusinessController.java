@@ -1,15 +1,9 @@
 package com.fidely.ui.controller;
 
-import com.fidely.domain.dto.request.BusinessConfigRequest;
-import com.fidely.domain.dto.request.BusinessProfileRequest;
-import com.fidely.domain.dto.request.CampaignRequest;
-import com.fidely.domain.dto.request.LoginRequest;
-import com.fidely.domain.dto.request.RegisterBusinessRequest;
-import com.fidely.domain.dto.response.AtRiskCustomerResponse;
-import com.fidely.domain.dto.response.BusinessConfigResponse;
-import com.fidely.domain.dto.response.BusinessProfileResponse;
-import com.fidely.domain.dto.response.RegisterResponse;
-import com.fidely.domain.dto.response.VipCustomerResponse;
+import com.fidely.dao.repository.BusinessRepository;
+import com.fidely.dao.repository.ScanLogRepository;
+import com.fidely.domain.dto.request.*;
+import com.fidely.domain.dto.response.*;
 import com.fidely.domain.dto.response.statistics.ActivityLogResponse;
 import com.fidely.domain.dto.response.statistics.DashboardResponse;
 import com.fidely.domain.entity.Business;
@@ -17,8 +11,6 @@ import com.fidely.domain.entity.ScanLog;
 import com.fidely.domain.exception.AccessForbiddenException;
 import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.domain.exception.SubscriptionInactiveException;
-import com.fidely.dao.repository.BusinessRepository;
-import com.fidely.dao.repository.ScanLogRepository;
 import com.fidely.domain.service.BusinessService;
 import com.fidely.domain.service.FileStorageService;
 import jakarta.validation.Valid;

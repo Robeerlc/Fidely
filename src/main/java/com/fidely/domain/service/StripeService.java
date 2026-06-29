@@ -1,9 +1,9 @@
 package com.fidely.domain.service;
 
+import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.domain.entity.Business;
 import com.fidely.domain.exception.InvalidOperationException;
 import com.fidely.domain.exception.ResourceNotFoundException;
-import com.fidely.dao.repository.BusinessRepository;
 import com.stripe.StripeClient;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Event;

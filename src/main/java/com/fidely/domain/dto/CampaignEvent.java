@@ -7,4 +7,5 @@ public record CampaignEvent(
         String message,
         String subject,
         Long walletCardId
-) {}
+) {
+}

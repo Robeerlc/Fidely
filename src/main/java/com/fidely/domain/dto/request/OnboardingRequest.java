@@ -19,4 +19,5 @@ public record OnboardingRequest(
         @NotBlank(message = "El email es obligatorio")
         @Email(message = "El email no tiene un formato válido")
         String email
-) {}
+) {
+}

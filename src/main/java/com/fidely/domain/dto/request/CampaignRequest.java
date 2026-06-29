@@ -13,4 +13,5 @@ public record CampaignRequest(
 
         @NotBlank(message = "El contenido del mensaje es obligatorio.")
         String messageBody
-) {}
+) {
+}

@@ -5,4 +5,5 @@ public record RankingEntryResponse(
         String customerName,
         String customerEmail,
         Long visitCount
-) {}
+) {
+}

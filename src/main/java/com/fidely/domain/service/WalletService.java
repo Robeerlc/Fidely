@@ -1,5 +1,9 @@
 package com.fidely.domain.service;
 
+import com.fidely.dao.repository.BusinessRepository;
+import com.fidely.dao.repository.EmployeeRepository;
+import com.fidely.dao.repository.ScanLogRepository;
+import com.fidely.dao.repository.WalletCardRepository;
 import com.fidely.domain.dto.request.OnboardingRequest;
 import com.fidely.domain.dto.request.card.CreateCardRequest;
 import com.fidely.domain.dto.request.card.RedeemRequest;
@@ -13,10 +17,6 @@ import com.fidely.domain.exception.AccessForbiddenException;
 import com.fidely.domain.exception.InvalidOperationException;
 import com.fidely.domain.exception.ResourceNotFoundException;
 import com.fidely.domain.exception.SubscriptionInactiveException;
-import com.fidely.dao.repository.BusinessRepository;
-import com.fidely.dao.repository.EmployeeRepository;
-import com.fidely.dao.repository.ScanLogRepository;
-import com.fidely.dao.repository.WalletCardRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;

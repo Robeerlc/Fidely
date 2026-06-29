@@ -9,4 +9,5 @@ public record BusinessProfileResponse(
         String rewardDescription,
         String bookingUrl,
         String instagramUrl
-) {}
+) {
+}

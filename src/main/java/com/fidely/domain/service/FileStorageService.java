@@ -48,7 +48,6 @@ public class FileStorageService {
             BlobInfo blobInfo = BlobInfo.newBuilder(blobId)
                     .setContentType(file.getContentType())
                     .build();
-
             storage.create(blobInfo, file.getBytes());
 
             return "https://storage.googleapis.com/" + bucketName + "/" + blobName;

@@ -25,37 +25,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request,
-                                    @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
-
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         final String jwt;
         final String userEmail;
         final String role;
-        String path = request.getRequestURI();
-
-        if (path.startsWith("/api/v1/stripe/webhook") ||
-                path.startsWith("/api/v1/business/register") ||
-                path.startsWith("/api/v1/business/login") ||
-                path.startsWith("/api/v1/business/verify") ||
-                path.startsWith("/api/v1/wallet/onboarding")) {
-
-            filterChain.doFilter(request, response);
-
-            return;
-
-        }
-
-        
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
         jwt = authHeader.substring(7);
-
-
 
         try {
             userEmail = jwtService.getSubject(jwt);
