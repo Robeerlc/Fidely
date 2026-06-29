@@ -47,7 +47,9 @@ public class StripeService {
 
         stripeClient.v1().paymentMethods().attach(
                 paymentMethodId,
-                PaymentMethodAttachParams.builder().setCustomer(customerId).build()
+                PaymentMethodAttachParams.builder()
+                        .setCustomer(customerId)
+                        .build()
         );
 
         stripeClient.v1().customers().update(
@@ -69,18 +71,26 @@ public class StripeService {
                                         .setPrice(priceId)
                                         .build()
                         )
-                        .setPaymentBehavior(SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE)
-                        .addExpand("latest_invoice")
+                        .setPaymentBehavior(
+                                SubscriptionCreateParams.PaymentBehavior.DEFAULT_INCOMPLETE
+                        )
                         .build()
         );
 
         Invoice invoice = sub.getLatestInvoiceObject();
+
+        if (invoice == null || invoice.getRawJsonObject() == null) {
+            throw new RuntimeException("Invoice no disponible");
+        }
+
         String paymentIntentId = invoice.getRawJsonObject()
                 .get("payment_intent")
                 .getAsString();
 
-        PaymentIntent pi = stripeClient.v1().paymentIntents().retrieve(paymentIntentId);
-        return pi.getClientSecret();
+        PaymentIntent paymentIntent =
+                stripeClient.v1().paymentIntents().retrieve(paymentIntentId);
+
+        return paymentIntent.getClientSecret();
     }
 
     public void cancel(String subscriptionId) throws StripeException {
