@@ -115,7 +115,7 @@ public class BusinessService {
         googleWalletService.updateGenericClassForBusiness(saved);
 
         return new BusinessProfileResponse(
-                saved.getId(), saved.getBrandName(), saved.getThemeColor(),
+                saved.getId(), saved.getInviteCode(), saved.getBrandName(), saved.getThemeColor(),
                 saved.getLogoUrl(), saved.getHeroImageUrl(), saved.getRewardDescription(),
                 saved.getBookingUrl(), saved.getInstagramUrl()
         );

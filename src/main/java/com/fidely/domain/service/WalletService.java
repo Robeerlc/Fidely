@@ -40,8 +40,8 @@ public class WalletService {
 
     @Transactional
     public OnboardingResponse silentOnboarding(OnboardingRequest request) {
-        Business business = businessRepository.findById(request.businessId())
-                .orElseThrow(() -> new ResourceNotFoundException("El negocio no existe."));
+        Business business = businessRepository.findByInviteCode(request.inviteCode())
+                .orElseThrow(() -> new ResourceNotFoundException("Código de invitación inválido o negocio no encontrado."));
 
         Customer customer = customerService.getOrCreateCustomer(
                 request.name(), request.phoneNumber(), request.email()

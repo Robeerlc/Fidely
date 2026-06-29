@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "businesses")
@@ -18,6 +19,10 @@ public class Business implements User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Builder.Default
+    @Column(name = "invite_code", nullable = false, unique = true, updatable = false)
+    private String inviteCode = UUID.randomUUID().toString();
 
     @Column(nullable = false)
     private String name;
