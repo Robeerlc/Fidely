@@ -1,6 +1,6 @@
 package com.fidely.config;
 
-import com.fidely.service.JwtService;
+import com.fidely.domain.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

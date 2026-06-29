@@ -1,8 +1,8 @@
 package com.fidely.config;
 
-import com.fidely.dto.response.ErrorResponse;
-import com.fidely.dto.response.stripe.StripeResponse;
-import com.fidely.exception.SubscriptionInactiveException;
+import com.fidely.domain.dto.response.ErrorResponse;
+import com.fidely.domain.dto.response.stripe.StripeResponse;
+import com.fidely.domain.exception.SubscriptionInactiveException;
 import com.stripe.exception.StripeException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

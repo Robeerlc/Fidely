@@ -1,0 +1,10 @@
+package com.fidely.domain.dto.request.card;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Data;
+
+@Data
+public class RedeemRequest {
+    @NotBlank(message = "El UUID de la tarjeta es obligatorio")
+    private String secureUuid;
+}
