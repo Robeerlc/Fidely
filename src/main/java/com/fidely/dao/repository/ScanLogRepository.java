@@ -49,10 +49,18 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
             @Param("to") LocalDateTime to,
             Pageable pageable);
 
-    @Query("SELECT MIN(l.scannedAt) as firstVisit, MAX(l.scannedAt) as lastVisit, COUNT(l) as visitCount " +
-            "FROM ScanLog l WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP' " +
-            "GROUP BY l.walletCard.id HAVING COUNT(l) > 1")
-    List<VisitStatsProjection> findVisitStatsByBusiness(@Param("businessId") Long businessId);
+    @Query(value = "SELECT COALESCE(AVG(DATEDIFF(last_visit, first_visit) / intervals), 0) " +
+            "FROM ( " +
+            "  SELECT MAX(s.scanned_at) as last_visit, " +
+            "         MIN(s.scanned_at) as first_visit, " +
+            "         (COUNT(s.id) - 1) as intervals " +
+            "  FROM scan_logs s " +
+            "  INNER JOIN wallet_cards w ON s.wallet_card_id = w.id " +
+            "  WHERE w.business_id = :businessId AND s.scan_type = 'EARN_STAMP' " +
+            "  GROUP BY s.wallet_card_id " +
+            "  HAVING COUNT(s.id) > 1" +
+            ") as subquery", nativeQuery = true)
+    Double calculateAverageDaysBetweenVisits(@Param("businessId") Long businessId);
 
     // Clientes VIP: los que más sellos han ganado ordenados de mayor a menor
     interface VipCustomerProjection {
@@ -66,13 +74,5 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
         Customer getCustomer();
 
         LocalDateTime getLastVisit();
-    }
-
-    interface VisitStatsProjection {
-        LocalDateTime getFirstVisit();
-
-        LocalDateTime getLastVisit();
-
-        Long getVisitCount();
     }
 }

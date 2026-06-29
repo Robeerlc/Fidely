@@ -23,7 +23,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -159,21 +158,8 @@ public class BusinessService {
         double ticketMedio = business.getAverageTicketPrice() != null ? business.getAverageTicketPrice() : 15.0;
         double ingresosRetenidos = totalStamps * ticketMedio;
 
-        List<ScanLogRepository.VisitStatsProjection> stats = scanLogRepository.findVisitStatsByBusiness(businessId);
-        int averageDays = 0;
-        if (!stats.isEmpty()) {
-            long totalDaysSum = 0;
-            long totalValidCustomers = 0;
-            for (var stat : stats) {
-                long daysBetween = Duration.between(stat.getFirstVisit(), stat.getLastVisit()).toDays();
-                long intervals = stat.getVisitCount() - 1;
-                if (intervals > 0) {
-                    totalDaysSum += (daysBetween / intervals);
-                    totalValidCustomers++;
-                }
-            }
-            averageDays = totalValidCustomers > 0 ? (int) (totalDaysSum / totalValidCustomers) : 0;
-        }
+        Double rawAverage = scanLogRepository.calculateAverageDaysBetweenVisits(businessId);
+        int averageDays = rawAverage != null ? rawAverage.intValue() : 0;
 
         return new DashboardResponse(
                 totalCustomers, cardsThisMonth, totalStamps, totalRewards,
