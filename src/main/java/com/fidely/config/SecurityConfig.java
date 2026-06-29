@@ -27,7 +27,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) {
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
@@ -37,8 +37,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/business/login").permitAll()
                         .requestMatchers("/api/v1/wallet/*/download").permitAll()
                         .requestMatchers("/api/v1/wallet/onboarding").permitAll()
-                        .requestMatchers("/api/stripe/webhook").permitAll()
+                        .requestMatchers("/api/v1/stripe/webhook").permitAll()
+                        .requestMatchers("/api/v1/stripe/**").hasRole("BUSINESS")
                         .requestMatchers("/api/v1/scan/stream/**").permitAll()
+                        .requestMatchers("/api/v1/business/verify").permitAll()
 
                         // Swagger
                         .requestMatchers(
@@ -85,7 +87,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 }

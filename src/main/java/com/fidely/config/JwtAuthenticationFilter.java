@@ -1,6 +1,6 @@
 package com.fidely.config;
 
-import com.fidely.service.JwtService;
+import com.fidely.domain.service.JwtService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -33,12 +33,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String jwt;
         final String userEmail;
         final String role;
+        String path = request.getRequestURI();
+
+        if (path.startsWith("/api/v1/stripe/webhook") ||
+                path.startsWith("/api/v1/business/register") ||
+                path.startsWith("/api/v1/business/login") ||
+                path.startsWith("/api/v1/business/verify") ||
+                path.startsWith("/api/v1/wallet/onboarding")) {
+
+            filterChain.doFilter(request, response);
+
+            return;
+
+        }
+
+        
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
         jwt = authHeader.substring(7);
+
+
 
         try {
             userEmail = jwtService.getSubject(jwt);
