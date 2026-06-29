@@ -77,7 +77,7 @@ public class GoogleWalletService {
             passObject.put("id", objectId);
             passObject.put("classId", classId);
             passObject.put("state", "ACTIVE");
-            passObject.put("hexBackgroundColor", "#FFFFFF");
+            passObject.put("hexBackgroundColor", business.getThemeColor() != null ? business.getThemeColor() : "#FFFFFF");
 
             if (business.getLogoUrl() != null && !business.getLogoUrl().isBlank()) {
                 Map<String, Object> logo = new HashMap<>();
