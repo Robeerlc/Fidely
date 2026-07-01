@@ -1,5 +1,5 @@
 package com.fidely.domain.entity;
 
 public enum ScanType {
-    EARN_STAMP, REDEEM_REWARD
+    EARN_STAMP, REDEEM_REWARD, GOOGLE_REVIEW
 }

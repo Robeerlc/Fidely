@@ -76,4 +76,7 @@ public interface ScanLogRepository extends JpaRepository<ScanLog, Long> {
 
         LocalDateTime getLastVisit();
     }
+
+    @Query("SELECT COALESCE(SUM(l.estimatedRevenue), 0.0) FROM ScanLog l WHERE l.walletCard.business.id = :businessId AND l.scanType = 'EARN_STAMP'")
+    Double calculateTotalRetainedRevenue(@Param("businessId") Long businessId);
 }

@@ -3,6 +3,7 @@ package com.fidely.domain.service;
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.EmployeeRepository;
 import com.fidely.dao.repository.ScanLogRepository;
+import com.fidely.dao.repository.ServiceItemRepository;
 import com.fidely.dao.repository.WalletCardRepository;
 import com.fidely.domain.dto.ScanUpdateEvent;
 import com.fidely.domain.dto.request.OnboardingRequest;
@@ -26,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,6 +40,7 @@ public class WalletService {
     private final BusinessRepository businessRepository;
     private final WalletCardRepository walletCardRepository;
     private final ScanLogRepository scanLogRepository;
+    private final ServiceItemRepository serviceItemRepository;
     private final GoogleWalletService googleWalletService;
     private final CustomerService customerService;
     private final EmailService emailService;
@@ -105,12 +109,21 @@ public class WalletService {
         card.setLastScannedAt(LocalDateTime.now());
         walletCardRepository.save(card);
 
+        List<ServiceItem> selectedServices = new ArrayList<>();
+        Double estimatedRevenue = null;
+        if (request.serviceIds() != null && !request.serviceIds().isEmpty()) {
+            selectedServices = serviceItemRepository.findByIdInAndBusinessId(request.serviceIds(), authBusiness.getId());
+            estimatedRevenue = selectedServices.stream().mapToDouble(ServiceItem::getPrice).sum();
+        }
+
         scanLogRepository.save(ScanLog.builder()
                 .walletCard(card)
                 .scanType(ScanType.EARN_STAMP)
                 .amount(amountToAdd)
                 .employee(employee)
                 .scannedAt(LocalDateTime.now())
+                .services(selectedServices)
+                .estimatedRevenue(estimatedRevenue)
                 .build());
 
         boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
@@ -172,6 +185,62 @@ public class WalletService {
         googleWalletService.updateCardAndTriggerPush(card, "¡Premio canjeado! Ya puedes volver a acumular sellos.");
 
         return new RedeemResponse(true, "¡Premio canjeado!");
+    }
+
+    @Transactional
+    public ScanResponse processGoogleReviewScan(ScanRequest request) {
+        WalletCard card = walletCardRepository.findBySecureUuid(request.secureUuid())
+                .orElseThrow(() -> new ResourceNotFoundException("Tarjeta no encontrada o UUID inválido."));
+
+        String email = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
+        Employee employee = employeeRepository.findByEmail(email).orElse(null);
+        Business authBusiness = (employee != null)
+                ? employee.getBusiness()
+                : businessRepository.findByEmail(email).orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
+
+        if (!authBusiness.isSubscriptionActive())
+            throw new SubscriptionInactiveException("La suscripción del local está inactiva.");
+
+        if (!card.getBusiness().getId().equals(authBusiness.getId()))
+            throw new AccessForbiddenException("Esta tarjeta no pertenece a tu comercio.");
+
+        if (!card.getIsActive())
+            throw new InvalidOperationException("Esta tarjeta ha sido desactivada por el negocio.");
+
+        if (card.isGoogleReviewed())
+            return new ScanResponse(false, card.getCurrentStamps(), card.getMaxStamps(),
+                    "Este cliente ya ha canjeado su sello por reseña de Google.");
+
+        card.setGoogleReviewed(true);
+        if (card.getCurrentStamps() < card.getMaxStamps())
+            card.setCurrentStamps(card.getCurrentStamps() + 1);
+        card.setLastScannedAt(LocalDateTime.now());
+        walletCardRepository.save(card);
+
+        scanLogRepository.save(ScanLog.builder()
+                .walletCard(card)
+                .scanType(ScanType.GOOGLE_REVIEW)
+                .amount(1)
+                .employee(employee)
+                .scannedAt(LocalDateTime.now())
+                .build());
+
+        boolean isCompleted = card.getCurrentStamps().equals(card.getMaxStamps());
+        sseService.emitEvent(card.getSecureUuid(), "scan-update",
+                Map.of("currentStamps", card.getCurrentStamps(), "isCompleted", isCompleted));
+
+        String msg = isCompleted
+                ? "¡Sello por reseña añadido! Tarjeta completada, premio desbloqueado."
+                : "¡Sello por reseña de Google añadido correctamente!";
+
+        try {
+            ScanUpdateEvent event = new ScanUpdateEvent(card.getId(), "¡Gracias por tu reseña! 🌟 Te hemos regalado 1 sello.");
+            kafkaTemplate.send("scan-updates", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Error encolando actualización de reseña: {}", e.getMessage());
+        }
+
+        return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(), msg);
     }
 
     @Transactional(readOnly = true)
