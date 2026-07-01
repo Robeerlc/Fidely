@@ -87,6 +87,9 @@ public class Business implements User {
     @OneToMany(mappedBy = "business", cascade = CascadeType.REMOVE, orphanRemoval = true)
     private List<Promotion> promotions;
 
+    @OneToMany(mappedBy = "business", cascade = CascadeType.REMOVE, orphanRemoval = true)
+    private List<ServiceItem> services;
+
     @Builder.Default
     @Column(name = "current_multiplier", nullable = false)
     private Integer currentMultiplier = 1;

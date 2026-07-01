@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.EmployeeRepository;
 import com.fidely.dao.repository.ScanLogRepository;
+import com.fidely.dao.repository.ServiceItemRepository;
 import com.fidely.dao.repository.WalletCardRepository;
 import com.fidely.domain.dto.CampaignEvent;
 import com.fidely.domain.dto.request.*;
@@ -36,6 +37,7 @@ public class BusinessService {
     private final GoogleWalletService googleWalletService;
     private final WalletCardRepository walletCardRepository;
     private final ScanLogRepository scanLogRepository;
+    private final ServiceItemRepository serviceItemRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
@@ -196,6 +198,46 @@ public class BusinessService {
 
         walletCardRepository.save(card);
         scanLogRepository.delete(scanLog);
+    }
+
+    @Transactional
+    public ServiceItemResponse createService(Long businessId, ServiceItemRequest request) {
+        Business business = businessRepository.findById(businessId)
+                .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
+        ServiceItem item = serviceItemRepository.save(ServiceItem.builder()
+                .business(business)
+                .name(request.name())
+                .price(request.price())
+                .build());
+        return new ServiceItemResponse(item.getId(), item.getName(), item.getPrice());
+    }
+
+    @Transactional(readOnly = true)
+    public List<ServiceItemResponse> listServices(Long businessId) {
+        return serviceItemRepository.findByBusinessId(businessId).stream()
+                .map(s -> new ServiceItemResponse(s.getId(), s.getName(), s.getPrice()))
+                .toList();
+    }
+
+    @Transactional
+    public ServiceItemResponse updateService(Long businessId, Long serviceId, ServiceItemRequest request) {
+        ServiceItem item = serviceItemRepository.findById(serviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado."));
+        if (!item.getBusiness().getId().equals(businessId))
+            throw new AccessForbiddenException("Este servicio no pertenece a tu negocio.");
+        item.setName(request.name());
+        item.setPrice(request.price());
+        serviceItemRepository.save(item);
+        return new ServiceItemResponse(item.getId(), item.getName(), item.getPrice());
+    }
+
+    @Transactional
+    public void deleteService(Long businessId, Long serviceId) {
+        ServiceItem item = serviceItemRepository.findById(serviceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Servicio no encontrado."));
+        if (!item.getBusiness().getId().equals(businessId))
+            throw new AccessForbiddenException("Este servicio no pertenece a tu negocio.");
+        serviceItemRepository.delete(item);
     }
 
     @Transactional

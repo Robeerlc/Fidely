@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "scan_logs", indexes = {
@@ -39,4 +41,16 @@ public class ScanLog {
     @Builder.Default
     @Column(name = "amount", nullable = false)
     private Integer amount = 1;
+
+    @Builder.Default
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "scan_log_services",
+            joinColumns = @JoinColumn(name = "scan_log_id"),
+            inverseJoinColumns = @JoinColumn(name = "service_item_id")
+    )
+    private List<ServiceItem> services = new ArrayList<>();
+
+    @Column(name = "estimated_revenue")
+    private Double estimatedRevenue;
 }

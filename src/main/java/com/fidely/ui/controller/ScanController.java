@@ -28,6 +28,13 @@ public class ScanController {
         else return ResponseEntity.badRequest().body(response);
     }
 
+    @PostMapping("/google-review")
+    public ResponseEntity<ScanResponse> googleReviewScan(@Valid @RequestBody ScanRequest request) {
+        ScanResponse response = walletService.processGoogleReviewScan(request);
+        if (response.success()) return ResponseEntity.ok(response);
+        else return ResponseEntity.badRequest().body(response);
+    }
+
     @PostMapping("/redeem")
     public ResponseEntity<RedeemResponse> redeemReward(@Valid @RequestBody RedeemRequest request) {
         RedeemResponse response = walletService.redeemReward(request);

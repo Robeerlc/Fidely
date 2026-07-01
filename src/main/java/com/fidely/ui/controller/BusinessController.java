@@ -3,7 +3,9 @@ package com.fidely.ui.controller;
 import com.fidely.dao.repository.BusinessRepository;
 import com.fidely.dao.repository.ScanLogRepository;
 import com.fidely.domain.dto.request.*;
+import com.fidely.domain.dto.request.ServiceItemRequest;
 import com.fidely.domain.dto.response.*;
+import com.fidely.domain.dto.response.ServiceItemResponse;
 import com.fidely.domain.dto.response.statistics.ActivityLogResponse;
 import com.fidely.domain.dto.response.statistics.DashboardResponse;
 import com.fidely.domain.entity.Business;
@@ -131,6 +133,35 @@ public class BusinessController {
         validateOwnership(businessId);
         businessService.sendCampaign(businessId, request);
         return ResponseEntity.accepted().build();
+    }
+
+    @PostMapping("/{businessId}/services")
+    public ResponseEntity<ServiceItemResponse> createService(
+            @PathVariable Long businessId, @Valid @RequestBody ServiceItemRequest request) {
+        validateOwnership(businessId);
+        return new ResponseEntity<>(businessService.createService(businessId, request), HttpStatus.CREATED);
+    }
+
+    @GetMapping("/{businessId}/services")
+    public ResponseEntity<List<ServiceItemResponse>> listServices(@PathVariable Long businessId) {
+        validateOwnership(businessId);
+        return ResponseEntity.ok(businessService.listServices(businessId));
+    }
+
+    @PutMapping("/{businessId}/services/{serviceId}")
+    public ResponseEntity<ServiceItemResponse> updateService(
+            @PathVariable Long businessId, @PathVariable Long serviceId,
+            @Valid @RequestBody ServiceItemRequest request) {
+        validateOwnership(businessId);
+        return ResponseEntity.ok(businessService.updateService(businessId, serviceId, request));
+    }
+
+    @DeleteMapping("/{businessId}/services/{serviceId}")
+    public ResponseEntity<Void> deleteService(
+            @PathVariable Long businessId, @PathVariable Long serviceId) {
+        validateOwnership(businessId);
+        businessService.deleteService(businessId, serviceId);
+        return ResponseEntity.noContent().build();
     }
 
     private void validateOwnership(Long businessId) {
