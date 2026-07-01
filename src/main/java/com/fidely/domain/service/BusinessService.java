@@ -1,11 +1,7 @@
 package com.fidely.domain.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fidely.dao.repository.BusinessRepository;
-import com.fidely.dao.repository.EmployeeRepository;
-import com.fidely.dao.repository.ScanLogRepository;
-import com.fidely.dao.repository.ServiceItemRepository;
-import com.fidely.dao.repository.WalletCardRepository;
+import com.fidely.dao.repository.*;
 import com.fidely.domain.dto.CampaignEvent;
 import com.fidely.domain.dto.request.*;
 import com.fidely.domain.dto.response.*;
@@ -138,7 +134,7 @@ public class BusinessService {
 
     @Transactional(readOnly = true)
     public DashboardResponse getDashboardMetrics(Long businessId) {
-        Business business = businessRepository.findById(businessId)
+        businessRepository.findById(businessId)
                 .orElseThrow(() -> new ResourceNotFoundException("Negocio no encontrado."));
 
         long totalCustomers = walletCardRepository.countByBusinessId(businessId);
@@ -156,9 +152,7 @@ public class BusinessService {
                         l.getEmployee() != null ? l.getEmployee().getName() : "Dueño",
                         l.getScannedAt()
                 )).toList();
-
-        double ticketMedio = business.getAverageTicketPrice() != null ? business.getAverageTicketPrice() : 15.0;
-        double ingresosRetenidos = totalStamps * ticketMedio;
+        double ingresosRetenidos = scanLogRepository.calculateTotalRetainedRevenue(businessId);
 
         Double rawAverage = scanLogRepository.calculateAverageDaysBetweenVisits(businessId);
         int averageDays = rawAverage != null ? rawAverage.intValue() : 0;

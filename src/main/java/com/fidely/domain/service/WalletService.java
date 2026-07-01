@@ -232,6 +232,14 @@ public class WalletService {
         String msg = isCompleted
                 ? "¡Sello por reseña añadido! Tarjeta completada, premio desbloqueado."
                 : "¡Sello por reseña de Google añadido correctamente!";
+
+        try {
+            ScanUpdateEvent event = new ScanUpdateEvent(card.getId(), "¡Gracias por tu reseña! 🌟 Te hemos regalado 1 sello.");
+            kafkaTemplate.send("scan-updates", objectMapper.writeValueAsString(event));
+        } catch (Exception e) {
+            log.error("Error encolando actualización de reseña: {}", e.getMessage());
+        }
+
         return new ScanResponse(true, card.getCurrentStamps(), card.getMaxStamps(), msg);
     }
 
